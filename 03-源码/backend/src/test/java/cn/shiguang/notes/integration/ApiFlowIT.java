@@ -150,8 +150,16 @@ class ApiFlowIT {
 
   @BeforeEach
   void clearRequestQuotas() {
-    var keys = redis.keys("sg:limit:*");
-    if (keys != null && !keys.isEmpty()) redis.delete(keys);
+    // The production 100ms command timeout may expire during a cold CI handshake.
+    // Wait for the fixture itself; do not relax production limits or skip failures.
+    org.awaitility.Awaitility.await()
+        .ignoreExceptions()
+        .atMost(java.time.Duration.ofSeconds(10))
+        .untilAsserted(
+            () -> {
+              var keys = redis.keys("sg:limit:*");
+              if (keys != null && !keys.isEmpty()) redis.delete(keys);
+            });
   }
 
   @org.springframework.beans.factory.annotation.Autowired

@@ -6,7 +6,6 @@ import cn.shiguang.notes.modules.governance.api.GovernanceApi;
 import cn.shiguang.notes.platform.persistence.Database;
 import cn.shiguang.notes.shared.contract.*;
 import java.awt.image.BufferedImage;
-import java.nio.file.*;
 import java.security.MessageDigest;
 import java.util.*;
 import javax.imageio.ImageIO;
@@ -23,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 @org.springframework.core.annotation.Order(20)
 public class DemoContent implements ApplicationRunner {
   private final boolean enabled;
-  private final Path root;
+  private final MediaStore store;
   private final Database db;
   private final ContentApi content;
   private final GovernanceApi governance;
@@ -32,14 +31,14 @@ public class DemoContent implements ApplicationRunner {
 
   public DemoContent(
       @Value("${app.seed-demo:false}") boolean enabled,
-      @Value("${app.media-root}") String root,
+      MediaStore store,
       Database db,
       ContentApi content,
       GovernanceApi governance,
       CollectionApi collections,
       EventPort events) {
     this.enabled = enabled;
-    this.root = Path.of(root).toAbsolutePath().normalize();
+    this.store = store;
     this.db = db;
     this.content = content;
     this.governance = governance;
@@ -56,7 +55,6 @@ public class DemoContent implements ApplicationRunner {
     var actor = new Actor(owner, Set.of("USER"));
     var reviewer = new Actor(reviewerId, Set.of("USER", "REVIEWER"));
     var topics = db.query("SELECT id FROM t_topic ORDER BY id LIMIT 8");
-    Files.createDirectories(root);
     String[] titles = {
       "演示｜把周末，留给一杯好咖啡",
       "演示｜去森林里，慢慢走一会儿",
@@ -79,7 +77,7 @@ public class DemoContent implements ApplicationRunner {
       }
       BufferedImage image = ImageIO.read(new java.io.ByteArrayInputStream(bytes));
       String key = "demo-" + (i + 1) + ".jpg";
-      Files.write(root.resolve(key), bytes);
+      store.put(key, bytes, "image/jpeg");
       var media =
           content.addMedia(
               actor,

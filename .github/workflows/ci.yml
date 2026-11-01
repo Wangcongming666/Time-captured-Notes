@@ -24,6 +24,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Build real MinIO test fixture from pinned official source
+        run: docker build -t shiguang-minio-test:2025-10-15 -f 03-源码/backend/src/test/resources/minio/Dockerfile 03-源码/backend/src/test/resources/minio
       - name: Java domain architecture and real container tests
         run: mvn -B -ntp -f 03-源码/backend/pom.xml verify
       - name: Frontend tests and type-checked build

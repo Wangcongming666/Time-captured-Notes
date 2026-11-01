@@ -19,7 +19,9 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /** Exercises actual HTTP, MySQL transactions and RabbitMQ, never substitutes an in-memory store. */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    properties = "app.media-root=target/test-media")
 @Testcontainers
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ApiFlowIT {
@@ -93,6 +95,9 @@ class ApiFlowIT {
   @org.springframework.beans.factory.annotation.Value("${app.media-root}")
   String mediaRoot;
 
+  @org.springframework.beans.factory.annotation.Autowired
+  cn.shiguang.notes.shared.contract.MediaStore mediaStore;
+
   @Test
   @Order(14)
   void cleanupRemovesOnlyUnboundExpiredMedia() throws Exception {
@@ -121,12 +126,10 @@ class ApiFlowIT {
                 "b".repeat(64)));
     database.update(
         "UPDATE t_media SET created_at=DATE_SUB(UTC_TIMESTAMP(),INTERVAL 25 HOUR) WHERE id=?", id);
-    var file = java.nio.file.Path.of(mediaRoot).resolve("cleanup-test.png");
-    java.nio.file.Files.createDirectories(file.getParent());
-    java.nio.file.Files.write(file, new byte[] {1, 2});
+    mediaStore.put("cleanup-test.png", new byte[] {1, 2}, "image/png");
     maintenance.cleanup();
     assertEquals(0, database.count("SELECT COUNT(*) FROM t_media WHERE id=?", id));
-    assertFalse(java.nio.file.Files.exists(file));
+    assertThrows(java.io.FileNotFoundException.class, () -> mediaStore.open("cleanup-test.png"));
     assertTrue(database.count("SELECT COUNT(*) FROM t_media WHERE status='BOUND'") > 0);
   }
 
@@ -200,7 +203,6 @@ class ApiFlowIT {
     r.add("app.cursor-key", () -> "integration-test-cursor-key-32-bytes-minimum");
     r.add("app.seed-demo", () -> true);
     r.add("app.demo-password", () -> "IntegrationPass123!");
-    r.add("app.media-root", () -> "target/test-media");
     r.add("management.server.port", () -> 0);
   }
 

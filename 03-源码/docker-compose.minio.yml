@@ -1,0 +1,11 @@
+# Production storage overlay: connect to an existing private MinIO bucket.
+services:
+  app:
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SEED_DEMO: "false"
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:?configure MinIO endpoint}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?configure MinIO access key}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?configure MinIO secret key}
+      MINIO_BUCKET: ${MINIO_BUCKET:-shiguang-media}
+      MINIO_CREATE_BUCKET: "false"

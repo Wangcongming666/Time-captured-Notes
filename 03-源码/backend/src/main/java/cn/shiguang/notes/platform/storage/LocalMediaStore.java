@@ -1,0 +1,51 @@
+package cn.shiguang.notes.platform.storage;
+
+import cn.shiguang.notes.shared.contract.MediaStore;
+import cn.shiguang.notes.shared.error.MediaStoreException;
+import java.io.*;
+import java.nio.file.*;
+
+public class LocalMediaStore implements MediaStore {
+  private final Path root;
+
+  public LocalMediaStore(String root) throws IOException {
+    this.root = Path.of(root).toAbsolutePath().normalize();
+    Files.createDirectories(this.root);
+  }
+
+  private Path path(String key) {
+    MediaStore.validateKey(key);
+    return root.resolve(key);
+  }
+
+  public void put(String key, byte[] bytes, String contentType) throws IOException {
+    Path target = path(key), temp = null;
+    try {
+      temp = Files.createTempFile(root, "upload-", ".tmp");
+      Files.write(temp, bytes);
+      Files.move(temp, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+    } catch (IOException e) {
+      throw new MediaStoreException("write", e);
+    } finally {
+      if (temp != null) Files.deleteIfExists(temp);
+    }
+  }
+
+  public InputStream open(String key) throws IOException {
+    try {
+      return Files.newInputStream(path(key));
+    } catch (NoSuchFileException e) {
+      throw new FileNotFoundException(key);
+    } catch (IOException e) {
+      throw new MediaStoreException("read", e);
+    }
+  }
+
+  public void delete(String key) throws IOException {
+    try {
+      Files.deleteIfExists(path(key));
+    } catch (IOException e) {
+      throw new MediaStoreException("delete", e);
+    }
+  }
+}

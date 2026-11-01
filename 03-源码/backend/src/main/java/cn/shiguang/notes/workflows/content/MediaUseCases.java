@@ -6,11 +6,9 @@ import cn.shiguang.notes.shared.contract.*;
 import cn.shiguang.notes.shared.error.BizException;
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.Semaphore;
 import javax.imageio.ImageIO;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,16 +18,13 @@ import org.springframework.web.multipart.MultipartFile;
 /** Decodes before binding; filesystem names never depend on user-supplied paths. */
 @Service
 public class MediaUseCases {
-  private final Path root;
+  private final MediaStore store;
   private final ContentApi content;
   private final PublicReadModel access;
   private final Semaphore slots = new Semaphore(4);
 
-  public MediaUseCases(
-      @Value("${app.media-root}") String root, ContentApi content, PublicReadModel access)
-      throws IOException {
-    this.root = Path.of(root).toAbsolutePath().normalize();
-    Files.createDirectories(this.root);
+  public MediaUseCases(MediaStore store, ContentApi content, PublicReadModel access) {
+    this.store = store;
     this.content = content;
     this.access = access;
   }
@@ -43,7 +38,7 @@ public class MediaUseCases {
     if (file.isEmpty() || file.getSize() > 10 * 1024 * 1024)
       throw new BizException(413, "FILE_TOO_LARGE", "图片必须在10MB以内");
     if (!slots.tryAcquire()) throw new BizException(429, "IMAGE_BUSY", "图片处理繁忙，请稍后重试");
-    Path path = null;
+    String storedKey = null;
     try (var input = ImageIO.createImageInputStream(file.getInputStream())) {
       var readers = ImageIO.getImageReaders(input);
       if (!readers.hasNext())
@@ -70,23 +65,16 @@ public class MediaUseCases {
       if (data.length > 10 * 1024 * 1024)
         throw new BizException(413, "FILE_TOO_LARGE", "处理后的图片超过10MB");
       String key = UUID.randomUUID() + "." + outFormat;
-      path = root.resolve(key);
-      Path temp = Files.createTempFile(root, "upload-", ".tmp");
-      try {
-        Files.write(temp, data);
-        Files.move(temp, path, StandardCopyOption.ATOMIC_MOVE);
-      } finally {
-        Files.deleteIfExists(temp);
-      }
-      final Path stored = path;
+      storedKey = key;
+      store.put(key, data, outFormat.equals("jpg") ? "image/jpeg" : "image/png");
+      final String stored = key;
       TransactionSynchronizationManager.registerSynchronization(
           new TransactionSynchronization() {
             public void afterCompletion(int status) {
-              if (status != STATUS_COMMITTED)
-                try {
-                  Files.deleteIfExists(stored);
-                } catch (IOException ignored) {
-                }
+              if (status == STATUS_ROLLED_BACK) deleteQuietly(stored);
+              else if (status != STATUS_COMMITTED)
+                org.slf4j.LoggerFactory.getLogger(MediaUseCases.class)
+                    .warn("Media commit outcome uncertain; retaining object key={}", stored);
             }
           });
       return content.addMedia(
@@ -102,7 +90,7 @@ public class MediaUseCases {
     } catch (java.security.NoSuchAlgorithmException e) {
       throw new IllegalStateException(e);
     } catch (IOException | RuntimeException e) {
-      if (path != null) Files.deleteIfExists(path);
+      if (storedKey != null) deleteQuietly(storedKey);
       throw e;
     } finally {
       slots.release();
@@ -112,8 +100,23 @@ public class MediaUseCases {
   public Map<String, Object> read(Actor actor, long id) throws IOException {
     var media = content.media(id);
     if (!access.mediaAllowed(actor, media)) throw BizException.missing();
-    Path path = root.resolve(Data.text(media, "storageKey")).normalize();
-    if (!path.startsWith(root) || !Files.isRegularFile(path)) throw BizException.missing();
-    return Data.map("resource", new FileSystemResource(path), "mime", media.get("mime"));
+    try {
+      return Data.map(
+          "resource",
+          new InputStreamResource(store.open(Data.text(media, "storageKey"))),
+          "mime",
+          media.get("mime"));
+    } catch (FileNotFoundException e) {
+      throw BizException.missing();
+    }
+  }
+
+  private void deleteQuietly(String key) {
+    try {
+      store.delete(key);
+    } catch (Exception e) {
+      org.slf4j.LoggerFactory.getLogger(MediaUseCases.class)
+          .warn("Media rollback cleanup failed key={} type={}", key, e.getClass().getSimpleName());
+    }
   }
 }

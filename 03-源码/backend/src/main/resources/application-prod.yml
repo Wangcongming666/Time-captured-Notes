@@ -1,0 +1,4 @@
+app:
+  media:
+    storage: minio
+  seed-demo: false

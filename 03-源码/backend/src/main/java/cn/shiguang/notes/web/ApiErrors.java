@@ -53,6 +53,11 @@ public class ApiErrors {
     return response(503, "DATABASE_BUSY", "服务繁忙，请稍后重试");
   }
 
+  @ExceptionHandler(cn.shiguang.notes.shared.error.MediaStoreException.class)
+  public ResponseEntity<ApiResponse<Void>> storage() {
+    return response(503, "MEDIA_STORAGE_UNAVAILABLE", "图片存储暂时不可用，请稍后重试");
+  }
+
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ApiResponse<Void>> unexpected(Exception e) {
     LOG.error("Unhandled request failure type={}", e.getClass().getSimpleName(), e);

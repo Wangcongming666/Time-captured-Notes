@@ -2,9 +2,8 @@ package cn.shiguang.notes.platform.application;
 
 import cn.shiguang.notes.platform.persistence.Database;
 import cn.shiguang.notes.shared.contract.Data;
-import java.nio.file.*;
+import cn.shiguang.notes.shared.contract.MediaStore;
 import java.util.*;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -16,13 +15,12 @@ import org.springframework.transaction.support.TransactionTemplate;
 public class MediaMaintenance {
   private final Database db;
   private final TransactionTemplate tx;
-  private final Path root;
+  private final MediaStore store;
 
-  public MediaMaintenance(
-      Database db, TransactionTemplate tx, @Value("${app.media-root}") String root) {
+  public MediaMaintenance(Database db, TransactionTemplate tx, MediaStore store) {
     this.db = db;
     this.tx = tx;
-    this.root = Path.of(root).toAbsolutePath().normalize();
+    this.store = store;
   }
 
   @Scheduled(fixedDelay = 600000, initialDelay = 600000)
@@ -46,10 +44,7 @@ public class MediaMaintenance {
     if (candidates == null) return;
     for (var row : candidates)
       try {
-        Path file = root.resolve(Data.text(row, "storageKey")).normalize();
-        if (!file.startsWith(root) || file.equals(root))
-          throw new IllegalStateException("Invalid media key");
-        Files.deleteIfExists(file);
+        store.delete(Data.text(row, "storageKey"));
         tx.execute(
             s ->
                 db.update(

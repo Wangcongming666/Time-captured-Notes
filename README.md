@@ -19,6 +19,7 @@
 | 后端 | Java 21、Spring Boot、Spring Security、MyBatis-Plus |
 | 前端 | Vue 3、TypeScript、Vite、Pinia、Vue Router、ECharts |
 | 数据 | MySQL 8.4、Flyway、Redis |
+| 图片 | 本地文件（开发测试） / MinIO 私有桶（生产） |
 | 消息 | RabbitMQ、事务 Outbox / Inbox |
 | 部署 | Docker Compose、Nginx |
 | 验证 | JUnit、ArchUnit、Testcontainers、Vitest、Playwright、GitHub Actions |
@@ -65,13 +66,41 @@ docker compose up -d --wait
 
 默认仅发布 `127.0.0.1:8080`。MySQL、Redis、RabbitMQ和后端管理端口通过 Docker 网络访问。数据库、消息及媒体使用具名卷持久化；`docker compose down` 保留数据卷，`down -v` 会清空数据卷。
 
+## 图片存储：测试本地，上线 MinIO
+
+默认 `local` 模式，上传文件保存在后端的 `MEDIA_ROOT`。使用 Compose 时对应容器 `/data/media` 和具名卷 `shiguang_media_data`，现有本地图片可以继续使用。
+
+生产环境启用 `prod` 配置会**强制使用 MinIO**；缺少凭据、桶不可访问或允许匿名访问时启动失败，不会回退写本地文件。图片仍通过后端 `/api/v1/media/{id}/content` 鉴权后流式读取，前端不保存 MinIO 密钥，也不使用可绕过实时权限的永久图片直链。
+
+先在已有 MinIO 服务创建私有桶，为应用配置对应桶的检查、策略读取、对象读写和删除权限。将以下配置补入本机 `03-源码/.env`，填写自己的实际值：
+
+```dotenv
+MINIO_ENDPOINT=https://minio.example.com
+MINIO_ACCESS_KEY=your-access-key
+MINIO_SECRET_KEY=your-secret-key
+MINIO_BUCKET=shiguang-media
+```
+
+在 `03-源码` 目录启动 MinIO 存储模式：
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.minio.yml up -d --build --wait --wait-timeout 240
+```
+
+覆盖配置启用 `prod` 并关闭演示数据；桶须提前创建，默认不允许应用自动建桶。该文件连接现有 MinIO，不负责创建线上 MinIO 服务器或配置公网 HTTPS。
+
+直接部署 Java 服务时，设置 `SPRING_PROFILES_ACTIVE=prod` 和上述四个 MinIO 环境变量即可。正常读取、上传失败后的回滚补偿、孤立图片清理都使用同一存储实现；MySQL只保存对象key及图片元数据。
+
+切换配置不会自动搬迁已有本地图片。若保留原数据库，需要先把媒体文件按数据库中原有的 `storage_key` 复制到目标私有桶；新生产环境可使用独立数据库和桶。数据库与对象存储应配套备份。数据库提交结果不确定时会保留对象，避免误删；若回滚补偿删除本身失败，会记录对象key，当前需人工核查清理。
+
 ## 本地开发与测试
 
-需要 Java 21、Maven 3.9+、Node.js 22.12+。后端集成测试使用真实临时 MySQL、Redis、RabbitMQ 容器，必须保持 Docker 可用。
+需要 Java 21、Maven 3.9+、Node.js 22.12+。后端集成测试使用真实临时 MySQL、Redis、RabbitMQ 和 MinIO 容器，分别验证本地与 MinIO 存储，必须保持 Docker 可用。MinIO 测试服务从官方固定源码版本构建，首次运行还需要下载 Go 工具链镜像及模块依赖；先构建下面的测试镜像。
 
 从仓库根目录执行后端验证：
 
 ```powershell
+docker build -t shiguang-minio-test:2025-10-15 -f 03-源码/backend/src/test/resources/minio/Dockerfile 03-源码/backend/src/test/resources/minio
 mvn -B -ntp -f 03-源码/backend/pom.xml verify
 ```
 
@@ -117,6 +146,6 @@ JaCoCo 报告输出到 `03-源码/backend/target/site/jacoco/index.html`。Windo
 
 ## 当前边界
 
-当前提供本地部署，未配置公网域名和 TLS。Redis 推荐快照失效时需刷新列表；正式规模压测、完整媒体恢复演练以及长期故障恢复指标仍需进一步验证。
+当前默认提供本地部署，并提供生产 MinIO 存储配置，未配置公网域名和 TLS。Redis 推荐快照失效时需刷新列表；正式规模压测、完整媒体恢复演练以及长期故障恢复指标仍需进一步验证。
 
 本仓库上传前后端源码、SQL、必要运行配置和本 README；课程需求、架构设计、Skill 与验收报告保留在本地。

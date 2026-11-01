@@ -1,5 +1,6 @@
 server:
   port: 8080
+  forward-headers-strategy: native
   tomcat:
     threads:
       max: 64
@@ -55,6 +56,8 @@ management:
   endpoint:
     health:
       show-details: never
+      probes:
+        enabled: true
 app:
   media-root: ${MEDIA_ROOT:./uploads}
   cursor-key: ${CURSOR_HMAC_KEY}

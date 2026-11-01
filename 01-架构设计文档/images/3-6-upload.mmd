@@ -1,0 +1,13 @@
+sequenceDiagram
+  participant U as 用户
+  participant W as 上传用例
+  participant I as 图像处理
+  participant FS as OS文件系统
+  participant DB as MySQL
+  U->>W: 文件与purpose，≤10MB
+  W->>I: 解码、限像素、去EXIF重编码
+  I->>FS: 临时文件→原子rename
+  W->>DB: 元数据事务
+  DB->>W: 提交成功或失败
+  W->>FS: 失败则删除，孤立文件定时清理
+  W->>U: mediaId；不返回公开直链

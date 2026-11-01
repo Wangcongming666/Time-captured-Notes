@@ -1,0 +1,9 @@
+sequenceDiagram
+  participant R as 审核员
+  participant W as 审核用例
+  participant DB as MySQL
+  R->>W: reviewId/version/决策
+  W->>DB: BEGIN + 锁目标与任务
+  DB->>W: 任务revision已过期
+  W->>DB: ROLLBACK，不产生成功事件
+  W->>R: 409 STALE_REVIEW + traceId

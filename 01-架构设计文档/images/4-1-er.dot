@@ -1,0 +1,30 @@
+digraph G {
+graph [rankdir=TB, bgcolor="white", pad="0.2", nodesep="0.42", ranksep="0.65", splines=polyline, fontname="Microsoft YaHei"];
+node [shape=box, style="rounded,filled", fillcolor="#EDF4F7", color="#245268", fontname="Microsoft YaHei", fontsize=16, margin="0.18,0.12"];
+edge [color="#50687C", fontname="Microsoft YaHei", fontsize=12, arrowsize=0.7];
+"U" [label="t_user / t_role\nuser_role / session", width=2.875];
+"N" [label="t_note\n版本与状态", width=1.611];
+"M" [label="t_media\nnote_media", width=1.750];
+"T" [label="t_topic\nnote_topic", width=1.750];
+"C" [label="t_comment / t_like\nt_follow", width=2.750];
+"F" [label="t_folder\nt_favorite", width=1.750];
+"P" [label="t_practice\nmedia / history", width=2.375];
+"RV" [label="t_review / t_report\nt_audit", width=2.875];
+"NT" [label="t_notification\nrecipient + event唯一", width=3.069];
+"OB" [label="t_outbox / t_inbox\nt_command", width=2.750];
+"DS" [label="t_interest\nt_hidden_note", width=2.125];
+"ST" [label="t_view_window\nnote_metric / daily_metric", width=3.736];
+"U" -> "N" [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2"><TR><TD WIDTH="62" HEIGHT="22">1 : 0..*</TD></TR></TABLE>>, style="solid"];
+"N" -> "M" [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2"><TR><TD WIDTH="62" HEIGHT="22">1 : 0..9</TD></TR></TABLE>>, style="solid"];
+"N" -> "T" [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2"><TR><TD WIDTH="44" HEIGHT="22">多对多</TD></TR></TABLE>>, style="solid"];
+"N" -> "C" [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2"><TR><TD WIDTH="62" HEIGHT="22">1 : 0..*</TD></TR></TABLE>>, style="solid"];
+"U" -> "F" [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2"><TR><TD WIDTH="62" HEIGHT="22">1 : 0..*</TD></TR></TABLE>>, style="solid"];
+"F" -> "N" [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2"><TR><TD WIDTH="86" HEIGHT="22">通过favorite</TD></TR></TABLE>>, style="solid"];
+"P" -> "N" [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2"><TR><TD WIDTH="62" HEIGHT="22">0..* : 1</TD></TR></TABLE>>, style="solid"];
+"U" -> "P" [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2"><TR><TD WIDTH="62" HEIGHT="22">1 : 0..*</TD></TR></TABLE>>, style="solid"];
+"RV" -> "N" [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2"><TR><TD WIDTH="104" HEIGHT="22">多态目标应用校验</TD></TR></TABLE>>, style="solid"];
+"RV" -> "P" [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2"><TR><TD WIDTH="104" HEIGHT="22">多态目标应用校验</TD></TR></TABLE>>, style="solid"];
+"U" -> "NT" [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2"><TR><TD WIDTH="62" HEIGHT="22">1 : 0..*</TD></TR></TABLE>>, style="solid"];
+"U" -> "DS" [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2"><TR><TD WIDTH="62" HEIGHT="22">1 : 0..*</TD></TR></TABLE>>, style="solid"];
+"N" -> "ST" [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2"><TR><TD WIDTH="62" HEIGHT="22">1 : 0..*</TD></TR></TABLE>>, style="solid"];
+}

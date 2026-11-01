@@ -1,0 +1,14 @@
+digraph G {
+graph [rankdir=TB, bgcolor="white", pad="0.2", nodesep="0.42", ranksep="0.65", splines=polyline, fontname="Microsoft YaHei"];
+node [shape=box, style="rounded,filled", fillcolor="#EDF4F7", color="#245268", fontname="Microsoft YaHei", fontsize=16, margin="0.18,0.12"];
+edge [color="#50687C", fontname="Microsoft YaHei", fontsize=12, arrowsize=0.7];
+"U" [label="Person\n普通用户/游客", width=1.958];
+"R" [label="Person\n内容审核员", width=1.611];
+"A" [label="Person\n系统管理员", width=1.611];
+"S" [label="Software System\n拾光笔记", width=2.375];
+"B" [label="External Environment\n独立备份介质", width=3.000];
+"U" -> "S" [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2"><TR><TD WIDTH="94" HEIGHT="22">浏览/创作/实践</TD></TR></TABLE>>, style="solid"];
+"R" -> "S" [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2"><TR><TD WIDTH="56" HEIGHT="22">内容治理</TD></TR></TABLE>>, style="solid"];
+"A" -> "S" [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2"><TR><TD WIDTH="63" HEIGHT="22">权限/运营</TD></TR></TABLE>>, style="solid"];
+"S" -> "B" [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2"><TR><TD WIDTH="56" HEIGHT="22">加密备份</TD></TR></TABLE>>, style="solid"];
+}

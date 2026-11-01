@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="690" viewBox="0 0 1100 690">
+<defs><marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#50687c"/></marker></defs>
+<rect width="100%" height="100%" fill="white"/>
+<rect x="0" y="15" width="130" height="45" fill="#edf4f7" stroke="#245268"/>
+<text x="50.0" y="44" text-anchor="middle" font-family="Microsoft YaHei" font-size="15">用户</text>
+<path d="M50.0,60 V670" stroke="#9aaeb9" stroke-dasharray="5 5"/>
+<rect x="235.0" y="15" width="130" height="45" fill="#edf4f7" stroke="#245268"/>
+<text x="300.0" y="44" text-anchor="middle" font-family="Microsoft YaHei" font-size="15">提交用例</text>
+<path d="M300.0,60 V670" stroke="#9aaeb9" stroke-dasharray="5 5"/>
+<rect x="485.0" y="15" width="130" height="45" fill="#edf4f7" stroke="#245268"/>
+<text x="550.0" y="44" text-anchor="middle" font-family="Microsoft YaHei" font-size="15">ContentApi</text>
+<path d="M550.0,60 V670" stroke="#9aaeb9" stroke-dasharray="5 5"/>
+<rect x="735.0" y="15" width="130" height="45" fill="#edf4f7" stroke="#245268"/>
+<text x="800.0" y="44" text-anchor="middle" font-family="Microsoft YaHei" font-size="15">GovernanceApi</text>
+<path d="M800.0,60 V670" stroke="#9aaeb9" stroke-dasharray="5 5"/>
+<rect x="985.0" y="15" width="130" height="45" fill="#edf4f7" stroke="#245268"/>
+<text x="1050.0" y="44" text-anchor="middle" font-family="Microsoft YaHei" font-size="15">MySQL</text>
+<path d="M1050.0,60 V670" stroke="#9aaeb9" stroke-dasharray="5 5"/>
+<path d="M50.0,105 H300.0" stroke="#50687c" fill="none" marker-end="url(#a)"/>
+<text x="175.0" y="93" text-anchor="middle" font-family="Microsoft YaHei" font-size="14">提交 noteId / version / key</text>
+<path d="M300.0,175 H1050.0" stroke="#50687c" fill="none" marker-end="url(#a)"/>
+<text x="675.0" y="163" text-anchor="middle" font-family="Microsoft YaHei" font-size="14">BEGIN + 校验幂等</text>
+<path d="M300.0,245 H550.0" stroke="#50687c" fill="none" marker-end="url(#a)"/>
+<text x="425.0" y="233" text-anchor="middle" font-family="Microsoft YaHei" font-size="14">校验完整性并改PENDING</text>
+<path d="M550.0,315 H1050.0" stroke="#50687c" fill="none" marker-end="url(#a)"/>
+<text x="800.0" y="303" text-anchor="middle" font-family="Microsoft YaHei" font-size="14">更新note/version</text>
+<path d="M300.0,385 H800.0" stroke="#50687c" fill="none" marker-end="url(#a)"/>
+<text x="550.0" y="373" text-anchor="middle" font-family="Microsoft YaHei" font-size="14">创建同revision审核任务</text>
+<path d="M800.0,455 H1050.0" stroke="#50687c" fill="none" marker-end="url(#a)"/>
+<text x="925.0" y="443" text-anchor="middle" font-family="Microsoft YaHei" font-size="14">插入唯一review</text>
+<path d="M300.0,525 H1050.0" stroke="#50687c" fill="none" marker-end="url(#a)"/>
+<text x="675.0" y="513" text-anchor="middle" font-family="Microsoft YaHei" font-size="14">写outbox/command并COMMIT</text>
+<path d="M300.0,595 H50.0" stroke="#50687c" fill="none" marker-end="url(#a)"/>
+<text x="175.0" y="583" text-anchor="middle" font-family="Microsoft YaHei" font-size="14">返回PENDING</text>
+</svg>

@@ -1,0 +1,14 @@
+sequenceDiagram
+  participant U as 用户
+  participant W as 提交用例
+  participant C as ContentApi
+  participant G as GovernanceApi
+  participant DB as MySQL
+  U->>W: 提交 noteId / version / key
+  W->>DB: BEGIN + 校验幂等
+  W->>C: 校验完整性并改PENDING
+  C->>DB: 更新note/version
+  W->>G: 创建同revision审核任务
+  G->>DB: 插入唯一review
+  W->>DB: 写outbox/command并COMMIT
+  W->>U: 返回PENDING

@@ -1,0 +1,15 @@
+flowchart TB
+  W -->|"原子提交"| DB
+  DB -->|"领取"| D
+  D -.->|"AMQP"| MQ
+  MQ -.->|"投递"| C
+  C -->|"刷新/失效"| R
+  C -->|"完成后归档"| A
+  DB -->|"SENT超时重驱动"| D
+  W["业务用例事务<br/>事实+review+command"]
+  DB["MySQL Outbox<br/>同事务PENDING"]
+  D["Dispatcher<br/>租约领取/确认"]
+  MQ["RabbitMQ<br/>定向至少一次"]
+  C["消费者事务<br/>inbox+副作用+DONE"]
+  R["Redis派生缓存<br/>允许失效/重建"]
+  A["归档/对账<br/>90日协调保留"]

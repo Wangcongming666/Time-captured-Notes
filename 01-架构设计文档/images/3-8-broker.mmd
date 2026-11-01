@@ -1,0 +1,9 @@
+sequenceDiagram
+  participant J as Outbox用例
+  participant DB as MySQL
+  participant MQ as RabbitMQ系统
+  J->>DB: 短事务领取定向事件
+  DB->>J: LEASED，释放行锁
+  J->>MQ: AMQP persistent + mandatory
+  MQ->>J: basic.return 或 publisher confirm
+  J->>DB: 成功置SENT；失败留待重发

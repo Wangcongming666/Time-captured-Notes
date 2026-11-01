@@ -1,0 +1,19 @@
+digraph G {
+graph [rankdir=TB, bgcolor="white", pad="0.2", nodesep="0.42", ranksep="0.65", splines=polyline, fontname="Microsoft YaHei"];
+node [shape=box, style="rounded,filled", fillcolor="#EDF4F7", color="#245268", fontname="Microsoft YaHei", fontsize=16, margin="0.18,0.12"];
+edge [color="#50687C", fontname="Microsoft YaHei", fontsize=12, arrowsize=0.7];
+"W" [label="业务用例事务\n事实+review+command", width=2.819];
+"DB" [label="MySQL Outbox\n同事务PENDING", width=2.042];
+"D" [label="Dispatcher\n租约领取/确认", width=1.958];
+"MQ" [label="RabbitMQ\n定向至少一次", width=1.833];
+"C" [label="消费者事务\ninbox+副作用+DONE", width=2.542];
+"R" [label="Redis派生缓存\n允许失效/重建", width=2.014];
+"A" [label="归档/对账\n90日协调保留", width=1.861];
+"W" -> "DB" [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2"><TR><TD WIDTH="56" HEIGHT="22">原子提交</TD></TR></TABLE>>, style="solid"];
+"DB" -> "D" [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2"><TR><TD WIDTH="32" HEIGHT="22">领取</TD></TR></TABLE>>, style="solid"];
+"D" -> "MQ" [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2"><TR><TD WIDTH="35" HEIGHT="22">AMQP</TD></TR></TABLE>>, style="dashed"];
+"MQ" -> "C" [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2"><TR><TD WIDTH="32" HEIGHT="22">投递</TD></TR></TABLE>>, style="dashed"];
+"C" -> "R" [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2"><TR><TD WIDTH="63" HEIGHT="22">刷新/失效</TD></TR></TABLE>>, style="solid"];
+"C" -> "A" [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2"><TR><TD WIDTH="68" HEIGHT="22">完成后归档</TD></TR></TABLE>>, style="solid"];
+"DB" -> "D" [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2"><TR><TD WIDTH="95" HEIGHT="22">SENT超时重驱动</TD></TR></TABLE>>, style="solid"];
+}

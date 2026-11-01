@@ -1,0 +1,11 @@
+sequenceDiagram
+  participant A as 请求A
+  participant B as 请求B
+  participant DB as MySQL
+  participant C as 计数消费者
+  A->>DB: 锁note/验证公开/INSERT唯一like
+  B->>DB: 同用户同note，等待目标锁
+  A->>DB: 写事件并COMMIT
+  B->>DB: 关系已存在，无新事件，成功
+  C->>DB: 按当前事实COUNT重算
+  DB->>C: 最终计数1，不因重复增2

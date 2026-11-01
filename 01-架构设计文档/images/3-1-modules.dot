@@ -1,0 +1,22 @@
+digraph G {
+graph [rankdir=LR, bgcolor="white", pad="0.2", nodesep="0.42", ranksep="0.65", splines=polyline, fontname="Microsoft YaHei"];
+node [shape=box, style="rounded,filled", fillcolor="#EDF4F7", color="#245268", fontname="Microsoft YaHei", fontsize=16, margin="0.18,0.12"];
+edge [color="#50687C", fontname="Microsoft YaHei", fontsize=12, arrowsize=0.7];
+"S" [label="拾光笔记\n8个模块", width=1.389];
+"I" [label="M1 账号权限\n注册/资料/封禁", width=2.083];
+"C" [label="M2 笔记创作\n草稿/图片/发布", width=2.083];
+"D" [label="M3 发现推荐\n信息流/搜索/偏好", width=2.306];
+"SO" [label="M4 社区互动\n点赞/评论/关注", width=2.083];
+"CO" [label="M5 收藏实践\n归档/计划/反馈", width=2.083];
+"N" [label="M6 消息通知\n互动/治理/已读", width=2.083];
+"G" [label="M7 内容治理\n审核/举报/话题", width=2.083];
+"ST" [label="M8 统计分析\n作者/平台/治理", width=2.083];
+"S" -> "I" [label="", style="solid"];
+"S" -> "C" [label="", style="solid"];
+"S" -> "D" [label="", style="solid"];
+"S" -> "SO" [label="", style="solid"];
+"S" -> "CO" [label="", style="solid"];
+"S" -> "N" [label="", style="solid"];
+"S" -> "G" [label="", style="solid"];
+"S" -> "ST" [label="", style="solid"];
+}

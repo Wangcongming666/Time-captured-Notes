@@ -1,0 +1,1669 @@
+[
+  {
+    "id": "2-1-context",
+    "title": "系统上下文",
+    "type": "graph",
+    "nodes": [
+      [
+        "U",
+        "Person\n普通用户/游客"
+      ],
+      [
+        "R",
+        "Person\n内容审核员"
+      ],
+      [
+        "A",
+        "Person\n系统管理员"
+      ],
+      [
+        "S",
+        "Software System\n拾光笔记"
+      ],
+      [
+        "B",
+        "External Environment\n独立备份介质"
+      ]
+    ],
+    "edges": [
+      [
+        "U",
+        "S",
+        "浏览/创作/实践"
+      ],
+      [
+        "R",
+        "S",
+        "内容治理"
+      ],
+      [
+        "A",
+        "S",
+        "权限/运营"
+      ],
+      [
+        "S",
+        "B",
+        "加密备份"
+      ]
+    ]
+  },
+  {
+    "id": "3-1-modules",
+    "title": "功能结构",
+    "type": "graph",
+    "nodes": [
+      [
+        "S",
+        "拾光笔记\n8个模块"
+      ],
+      [
+        "I",
+        "M1 账号权限\n注册/资料/封禁"
+      ],
+      [
+        "C",
+        "M2 笔记创作\n草稿/图片/发布"
+      ],
+      [
+        "D",
+        "M3 发现推荐\n信息流/搜索/偏好"
+      ],
+      [
+        "SO",
+        "M4 社区互动\n点赞/评论/关注"
+      ],
+      [
+        "CO",
+        "M5 收藏实践\n归档/计划/反馈"
+      ],
+      [
+        "N",
+        "M6 消息通知\n互动/治理/已读"
+      ],
+      [
+        "G",
+        "M7 内容治理\n审核/举报/话题"
+      ],
+      [
+        "ST",
+        "M8 统计分析\n作者/平台/治理"
+      ]
+    ],
+    "edges": [
+      [
+        "S",
+        "I",
+        ""
+      ],
+      [
+        "S",
+        "C",
+        ""
+      ],
+      [
+        "S",
+        "D",
+        ""
+      ],
+      [
+        "S",
+        "SO",
+        ""
+      ],
+      [
+        "S",
+        "CO",
+        ""
+      ],
+      [
+        "S",
+        "N",
+        ""
+      ],
+      [
+        "S",
+        "G",
+        ""
+      ],
+      [
+        "S",
+        "ST",
+        ""
+      ]
+    ]
+  },
+  {
+    "id": "3-2-containers",
+    "title": "容器",
+    "type": "graph",
+    "nodes": [
+      [
+        "B",
+        "Browser\nVue3 SPA"
+      ],
+      [
+        "N",
+        "Container\nNginx反向代理"
+      ],
+      [
+        "A",
+        "Container\nJava21 / Boot3.5"
+      ],
+      [
+        "DB",
+        "Container\nMySQL8.4"
+      ],
+      [
+        "R",
+        "Container\nRedis缓存"
+      ],
+      [
+        "MQ",
+        "Container\nRabbitMQ"
+      ],
+      [
+        "F",
+        "Storage\n私有媒体卷"
+      ],
+      [
+        "P",
+        "Container / optional\nPrometheus"
+      ],
+      [
+        "G",
+        "Container / optional\nGrafana"
+      ]
+    ],
+    "edges": [
+      [
+        "B",
+        "N",
+        "HTTP"
+      ],
+      [
+        "N",
+        "A",
+        "HTTP /api"
+      ],
+      [
+        "A",
+        "DB",
+        "JDBC"
+      ],
+      [
+        "A",
+        "R",
+        "RESP"
+      ],
+      [
+        "A",
+        "MQ",
+        "AMQP",
+        "async"
+      ],
+      [
+        "A",
+        "F",
+        "文件API"
+      ],
+      [
+        "P",
+        "A",
+        "HTTP管理端口"
+      ],
+      [
+        "G",
+        "P",
+        "查询"
+      ]
+    ]
+  },
+  {
+    "id": "3-3-layers",
+    "title": "分层",
+    "type": "graph",
+    "nodes": [
+      [
+        "W",
+        "接入层 web\nController / DTO"
+      ],
+      [
+        "WF",
+        "应用编排 workflows\n事务 / 授权 / 跨模块"
+      ],
+      [
+        "API",
+        "模块 api\n契约 / record"
+      ],
+      [
+        "APP",
+        "模块 application\n实现导出API"
+      ],
+      [
+        "D",
+        "模块 domain\n实体 / 仓储端口"
+      ],
+      [
+        "INF",
+        "模块 infrastructure\nPO / Mapper / Adapter"
+      ],
+      [
+        "S",
+        "shared\n稳定技术契约"
+      ],
+      [
+        "P",
+        "platform\n安全/消息/查询实现"
+      ]
+    ],
+    "edges": [
+      [
+        "W",
+        "WF",
+        "编译依赖"
+      ],
+      [
+        "WF",
+        "API",
+        "调用契约"
+      ],
+      [
+        "APP",
+        "API",
+        "实现"
+      ],
+      [
+        "APP",
+        "D",
+        "调用"
+      ],
+      [
+        "INF",
+        "D",
+        "实现端口"
+      ],
+      [
+        "WF",
+        "S",
+        "技术契约"
+      ],
+      [
+        "P",
+        "S",
+        "实现"
+      ]
+    ]
+  },
+  {
+    "id": "3-4-domain",
+    "title": "领域关系",
+    "type": "graph",
+    "nodes": [
+      [
+        "U",
+        "User\n身份聚合"
+      ],
+      [
+        "N",
+        "Note\n内容聚合根"
+      ],
+      [
+        "M",
+        "Media / Topic\n有序图与话题"
+      ],
+      [
+        "C",
+        "Comment / Like\n互动事实"
+      ],
+      [
+        "F",
+        "Folder / Favorite\n私有归档"
+      ],
+      [
+        "P",
+        "Practice\n实践聚合根"
+      ],
+      [
+        "R",
+        "Review / Report\n治理聚合"
+      ],
+      [
+        "NT",
+        "Notification\n收件箱"
+      ],
+      [
+        "FO",
+        "Follow\n关注关系"
+      ]
+    ],
+    "edges": [
+      [
+        "U",
+        "N",
+        "1 : 0..* 创作"
+      ],
+      [
+        "N",
+        "M",
+        "1 : 1..* 引用"
+      ],
+      [
+        "N",
+        "C",
+        "1 : 0..*"
+      ],
+      [
+        "U",
+        "F",
+        "1 : 0..*"
+      ],
+      [
+        "F",
+        "N",
+        "0..* : 1"
+      ],
+      [
+        "U",
+        "P",
+        "1 : 0..*"
+      ],
+      [
+        "P",
+        "N",
+        "0..* : 1"
+      ],
+      [
+        "R",
+        "N",
+        "版本化目标"
+      ],
+      [
+        "R",
+        "P",
+        "版本化目标"
+      ],
+      [
+        "U",
+        "NT",
+        "1 : 0..*"
+      ],
+      [
+        "U",
+        "FO",
+        "关注/被关注"
+      ]
+    ]
+  },
+  {
+    "id": "3-5-submit",
+    "title": "跨模块提交",
+    "type": "sequence",
+    "actors": [
+      [
+        "U",
+        "用户"
+      ],
+      [
+        "W",
+        "提交用例"
+      ],
+      [
+        "C",
+        "ContentApi"
+      ],
+      [
+        "G",
+        "GovernanceApi"
+      ],
+      [
+        "DB",
+        "MySQL"
+      ]
+    ],
+    "messages": [
+      [
+        "U",
+        "W",
+        "提交 noteId / version / key"
+      ],
+      [
+        "W",
+        "DB",
+        "BEGIN + 校验幂等"
+      ],
+      [
+        "W",
+        "C",
+        "校验完整性并改PENDING"
+      ],
+      [
+        "C",
+        "DB",
+        "更新note/version"
+      ],
+      [
+        "W",
+        "G",
+        "创建同revision审核任务"
+      ],
+      [
+        "G",
+        "DB",
+        "插入唯一review"
+      ],
+      [
+        "W",
+        "DB",
+        "写outbox/command并COMMIT"
+      ],
+      [
+        "W",
+        "U",
+        "返回PENDING"
+      ]
+    ]
+  },
+  {
+    "id": "3-6-upload",
+    "title": "文件环境交互",
+    "type": "sequence",
+    "actors": [
+      [
+        "U",
+        "用户"
+      ],
+      [
+        "W",
+        "上传用例"
+      ],
+      [
+        "I",
+        "图像处理"
+      ],
+      [
+        "FS",
+        "OS文件系统"
+      ],
+      [
+        "DB",
+        "MySQL"
+      ]
+    ],
+    "messages": [
+      [
+        "U",
+        "W",
+        "文件与purpose，≤10MB"
+      ],
+      [
+        "W",
+        "I",
+        "解码、限像素、去EXIF重编码"
+      ],
+      [
+        "I",
+        "FS",
+        "临时文件→原子rename"
+      ],
+      [
+        "W",
+        "DB",
+        "元数据事务"
+      ],
+      [
+        "DB",
+        "W",
+        "提交成功或失败"
+      ],
+      [
+        "W",
+        "FS",
+        "失败则删除，孤立文件定时清理"
+      ],
+      [
+        "W",
+        "U",
+        "mediaId；不返回公开直链"
+      ]
+    ]
+  },
+  {
+    "id": "3-7-stale",
+    "title": "失败审核",
+    "type": "sequence",
+    "actors": [
+      [
+        "R",
+        "审核员"
+      ],
+      [
+        "W",
+        "审核用例"
+      ],
+      [
+        "DB",
+        "MySQL"
+      ]
+    ],
+    "messages": [
+      [
+        "R",
+        "W",
+        "reviewId/version/决策"
+      ],
+      [
+        "W",
+        "DB",
+        "BEGIN + 锁目标与任务"
+      ],
+      [
+        "DB",
+        "W",
+        "任务revision已过期"
+      ],
+      [
+        "W",
+        "DB",
+        "ROLLBACK，不产生成功事件"
+      ],
+      [
+        "W",
+        "R",
+        "409 STALE_REVIEW + traceId"
+      ]
+    ]
+  },
+  {
+    "id": "3-8-broker",
+    "title": "独立消息系统调用",
+    "type": "sequence",
+    "actors": [
+      [
+        "J",
+        "Outbox用例"
+      ],
+      [
+        "DB",
+        "MySQL"
+      ],
+      [
+        "MQ",
+        "RabbitMQ系统"
+      ]
+    ],
+    "messages": [
+      [
+        "J",
+        "DB",
+        "短事务领取定向事件"
+      ],
+      [
+        "DB",
+        "J",
+        "LEASED，释放行锁"
+      ],
+      [
+        "J",
+        "MQ",
+        "AMQP persistent + mandatory"
+      ],
+      [
+        "MQ",
+        "J",
+        "basic.return 或 publisher confirm"
+      ],
+      [
+        "J",
+        "DB",
+        "成功置SENT；失败留待重发"
+      ]
+    ]
+  },
+  {
+    "id": "4-1-er",
+    "title": "实体关系",
+    "type": "graph",
+    "nodes": [
+      [
+        "U",
+        "t_user / t_role\nuser_role / session"
+      ],
+      [
+        "N",
+        "t_note\n版本与状态"
+      ],
+      [
+        "M",
+        "t_media\nnote_media"
+      ],
+      [
+        "T",
+        "t_topic\nnote_topic"
+      ],
+      [
+        "C",
+        "t_comment / t_like\nt_follow"
+      ],
+      [
+        "F",
+        "t_folder\nt_favorite"
+      ],
+      [
+        "P",
+        "t_practice\nmedia / history"
+      ],
+      [
+        "RV",
+        "t_review / t_report\nt_audit"
+      ],
+      [
+        "NT",
+        "t_notification\nrecipient + event唯一"
+      ],
+      [
+        "OB",
+        "t_outbox / t_inbox\nt_command"
+      ],
+      [
+        "DS",
+        "t_interest\nt_hidden_note"
+      ],
+      [
+        "ST",
+        "t_view_window\nnote_metric / daily_metric"
+      ]
+    ],
+    "edges": [
+      [
+        "U",
+        "N",
+        "1 : 0..*"
+      ],
+      [
+        "N",
+        "M",
+        "1 : 0..9"
+      ],
+      [
+        "N",
+        "T",
+        "多对多"
+      ],
+      [
+        "N",
+        "C",
+        "1 : 0..*"
+      ],
+      [
+        "U",
+        "F",
+        "1 : 0..*"
+      ],
+      [
+        "F",
+        "N",
+        "通过favorite"
+      ],
+      [
+        "P",
+        "N",
+        "0..* : 1"
+      ],
+      [
+        "U",
+        "P",
+        "1 : 0..*"
+      ],
+      [
+        "RV",
+        "N",
+        "多态目标应用校验"
+      ],
+      [
+        "RV",
+        "P",
+        "多态目标应用校验"
+      ],
+      [
+        "U",
+        "NT",
+        "1 : 0..*"
+      ],
+      [
+        "U",
+        "DS",
+        "1 : 0..*"
+      ],
+      [
+        "N",
+        "ST",
+        "1 : 0..*"
+      ]
+    ]
+  },
+  {
+    "id": "4-2-dataflow",
+    "title": "数据流",
+    "type": "graph",
+    "nodes": [
+      [
+        "W",
+        "业务用例事务\n事实+review+command"
+      ],
+      [
+        "DB",
+        "MySQL Outbox\n同事务PENDING"
+      ],
+      [
+        "D",
+        "Dispatcher\n租约领取/确认"
+      ],
+      [
+        "MQ",
+        "RabbitMQ\n定向至少一次"
+      ],
+      [
+        "C",
+        "消费者事务\ninbox+副作用+DONE"
+      ],
+      [
+        "R",
+        "Redis派生缓存\n允许失效/重建"
+      ],
+      [
+        "A",
+        "归档/对账\n90日协调保留"
+      ]
+    ],
+    "edges": [
+      [
+        "W",
+        "DB",
+        "原子提交"
+      ],
+      [
+        "DB",
+        "D",
+        "领取"
+      ],
+      [
+        "D",
+        "MQ",
+        "AMQP",
+        "async"
+      ],
+      [
+        "MQ",
+        "C",
+        "投递",
+        "async"
+      ],
+      [
+        "C",
+        "R",
+        "刷新/失效"
+      ],
+      [
+        "C",
+        "A",
+        "完成后归档"
+      ],
+      [
+        "DB",
+        "D",
+        "SENT超时重驱动"
+      ]
+    ]
+  },
+  {
+    "id": "5-1-compile",
+    "title": "编译依赖",
+    "type": "graph",
+    "nodes": [
+      [
+        "B",
+        "NotesApplication\n组合根例外"
+      ],
+      [
+        "W",
+        "web\n仅HTTP"
+      ],
+      [
+        "WF",
+        "workflows\n业务编排"
+      ],
+      [
+        "API",
+        "8模块 api\n无跨模块import"
+      ],
+      [
+        "APP",
+        "8模块 application\n实现API"
+      ],
+      [
+        "D",
+        "8模块 domain\n纯规则/端口"
+      ],
+      [
+        "I",
+        "8模块 infrastructure\n实现领域端口"
+      ],
+      [
+        "S",
+        "shared\n技术契约"
+      ],
+      [
+        "P",
+        "platform\n技术集成"
+      ]
+    ],
+    "edges": [
+      [
+        "B",
+        "W",
+        "装配"
+      ],
+      [
+        "W",
+        "WF",
+        "依赖"
+      ],
+      [
+        "WF",
+        "API",
+        "依赖"
+      ],
+      [
+        "APP",
+        "API",
+        "实现"
+      ],
+      [
+        "APP",
+        "D",
+        "依赖"
+      ],
+      [
+        "I",
+        "D",
+        "实现"
+      ],
+      [
+        "P",
+        "S",
+        "实现"
+      ],
+      [
+        "WF",
+        "S",
+        "依赖"
+      ]
+    ]
+  },
+  {
+    "id": "5-2-ci",
+    "title": "构建流水线",
+    "type": "graph",
+    "nodes": [
+      [
+        "A",
+        "提交\n短期分支"
+      ],
+      [
+        "B",
+        "检查\n格式/类型/分层"
+      ],
+      [
+        "C",
+        "测试\n单元/覆盖率"
+      ],
+      [
+        "D",
+        "集成\nMySQL/MQ/契约"
+      ],
+      [
+        "E",
+        "前端\n构建/E2E"
+      ],
+      [
+        "F",
+        "制品\n镜像/漏洞/许可"
+      ],
+      [
+        "G",
+        "演示部署\n健康/冒烟"
+      ],
+      [
+        "H",
+        "审核\n证据/文档同步"
+      ]
+    ],
+    "edges": [
+      [
+        "A",
+        "B",
+        ""
+      ],
+      [
+        "B",
+        "C",
+        ""
+      ],
+      [
+        "C",
+        "D",
+        ""
+      ],
+      [
+        "D",
+        "E",
+        ""
+      ],
+      [
+        "E",
+        "F",
+        ""
+      ],
+      [
+        "F",
+        "G",
+        ""
+      ],
+      [
+        "G",
+        "H",
+        ""
+      ]
+    ]
+  },
+  {
+    "id": "6-1-concurrency",
+    "title": "并发点赞",
+    "type": "sequence",
+    "actors": [
+      [
+        "A",
+        "请求A"
+      ],
+      [
+        "B",
+        "请求B"
+      ],
+      [
+        "DB",
+        "MySQL"
+      ],
+      [
+        "C",
+        "计数消费者"
+      ]
+    ],
+    "messages": [
+      [
+        "A",
+        "DB",
+        "锁note/验证公开/INSERT唯一like"
+      ],
+      [
+        "B",
+        "DB",
+        "同用户同note，等待目标锁"
+      ],
+      [
+        "A",
+        "DB",
+        "写事件并COMMIT"
+      ],
+      [
+        "B",
+        "DB",
+        "关系已存在，无新事件，成功"
+      ],
+      [
+        "C",
+        "DB",
+        "按当前事实COUNT重算"
+      ],
+      [
+        "DB",
+        "C",
+        "最终计数1，不因重复增2"
+      ]
+    ]
+  },
+  {
+    "id": "6-2-redelivery",
+    "title": "消费重投",
+    "type": "sequence",
+    "actors": [
+      [
+        "MQ",
+        "RabbitMQ"
+      ],
+      [
+        "C",
+        "消费者"
+      ],
+      [
+        "DB",
+        "MySQL"
+      ]
+    ],
+    "messages": [
+      [
+        "MQ",
+        "C",
+        "投递eventId"
+      ],
+      [
+        "C",
+        "DB",
+        "BEGIN：Inbox+通知+Outbox DONE"
+      ],
+      [
+        "DB",
+        "C",
+        "COMMIT成功"
+      ],
+      [
+        "C",
+        "C",
+        "ACK之前进程崩溃"
+      ],
+      [
+        "MQ",
+        "C",
+        "重新投递同eventId"
+      ],
+      [
+        "C",
+        "DB",
+        "Inbox唯一键命中，已完成"
+      ],
+      [
+        "C",
+        "MQ",
+        "ACK，无重复通知"
+      ]
+    ]
+  },
+  {
+    "id": "6-3-cachefail",
+    "title": "缓存故障",
+    "type": "sequence",
+    "actors": [
+      [
+        "U",
+        "浏览请求"
+      ],
+      [
+        "A",
+        "应用"
+      ],
+      [
+        "R",
+        "Redis"
+      ],
+      [
+        "DB",
+        "MySQL"
+      ]
+    ],
+    "messages": [
+      [
+        "U",
+        "A",
+        "列表/详情"
+      ],
+      [
+        "A",
+        "R",
+        "缓存查询100ms预算"
+      ],
+      [
+        "R",
+        "A",
+        "超时/熔断"
+      ],
+      [
+        "A",
+        "A",
+        "bulkhead16 + 有限分页"
+      ],
+      [
+        "A",
+        "DB",
+        "索引查询与实时可见性"
+      ],
+      [
+        "DB",
+        "A",
+        "公开数据"
+      ],
+      [
+        "A",
+        "U",
+        "成功；超限429/503"
+      ]
+    ]
+  },
+  {
+    "id": "6-4-state",
+    "title": "笔记状态",
+    "type": "graph",
+    "nodes": [
+      [
+        "D",
+        "DRAFT\n本人私有"
+      ],
+      [
+        "P",
+        "PENDING\n等待审核"
+      ],
+      [
+        "ON",
+        "PUBLISHED\n唯一公开状态"
+      ],
+      [
+        "R",
+        "REJECTED\n原因仅本人"
+      ],
+      [
+        "O",
+        "OFFLINE\n治理下架"
+      ],
+      [
+        "DEL",
+        "DELETED\n终结"
+      ]
+    ],
+    "edges": [
+      [
+        "D",
+        "P",
+        "完整提交"
+      ],
+      [
+        "P",
+        "ON",
+        "审核通过"
+      ],
+      [
+        "P",
+        "R",
+        "驳回"
+      ],
+      [
+        "P",
+        "D",
+        "本人撤回"
+      ],
+      [
+        "ON",
+        "P",
+        "本人编辑重审"
+      ],
+      [
+        "ON",
+        "O",
+        "审核员下架"
+      ],
+      [
+        "R",
+        "D",
+        "本人整改"
+      ],
+      [
+        "O",
+        "D",
+        "本人整改"
+      ],
+      [
+        "D",
+        "DEL",
+        "本人删除"
+      ],
+      [
+        "P",
+        "DEL",
+        "本人删除"
+      ],
+      [
+        "ON",
+        "DEL",
+        "本人删除"
+      ],
+      [
+        "R",
+        "DEL",
+        "本人删除"
+      ],
+      [
+        "O",
+        "DEL",
+        "本人删除"
+      ]
+    ]
+  },
+  {
+    "id": "7-1-deploy",
+    "title": "本地物理部署",
+    "type": "graph",
+    "nodes": [
+      [
+        "B",
+        "宿主浏览器\n127.0.0.1:8080"
+      ],
+      [
+        "N",
+        "edge网络\nNginx :80"
+      ],
+      [
+        "A",
+        "edge + back\napp :8080/8081"
+      ],
+      [
+        "DB",
+        "back internal\nmysql :3306"
+      ],
+      [
+        "R",
+        "back internal\nredis :6379"
+      ],
+      [
+        "MQ",
+        "back internal\nRabbit :5672"
+      ],
+      [
+        "F",
+        "媒体持久卷\n仅挂app"
+      ],
+      [
+        "P",
+        "monitor profile\nPrometheus/Grafana"
+      ],
+      [
+        "BK",
+        "宿主外接介质\n加密离线备份"
+      ]
+    ],
+    "edges": [
+      [
+        "B",
+        "N",
+        "HTTP"
+      ],
+      [
+        "N",
+        "A",
+        "/api"
+      ],
+      [
+        "A",
+        "DB",
+        "JDBC"
+      ],
+      [
+        "A",
+        "R",
+        "RESP"
+      ],
+      [
+        "A",
+        "MQ",
+        "AMQP",
+        "async"
+      ],
+      [
+        "A",
+        "F",
+        "私有文件"
+      ],
+      [
+        "P",
+        "A",
+        "管理HTTP"
+      ],
+      [
+        "DB",
+        "BK",
+        "备份"
+      ],
+      [
+        "F",
+        "BK",
+        "一致性备份"
+      ]
+    ]
+  },
+  {
+    "id": "4-1-er-full",
+    "title": "完整30实体ER",
+    "type": "graph",
+    "nodes": [
+      [
+        "t_user",
+        "t_user\nidentity"
+      ],
+      [
+        "t_role",
+        "t_role\nidentity"
+      ],
+      [
+        "t_user_role",
+        "t_user_role\nidentity"
+      ],
+      [
+        "t_session",
+        "t_session\nidentity"
+      ],
+      [
+        "t_topic",
+        "t_topic\ngovernance"
+      ],
+      [
+        "t_media",
+        "t_media\ncontent"
+      ],
+      [
+        "t_note",
+        "t_note\ncontent"
+      ],
+      [
+        "t_note_media",
+        "t_note_media\ncontent"
+      ],
+      [
+        "t_note_topic",
+        "t_note_topic\ncontent"
+      ],
+      [
+        "t_interest",
+        "t_interest\ndiscovery"
+      ],
+      [
+        "t_hidden_note",
+        "t_hidden_note\ndiscovery"
+      ],
+      [
+        "t_comment",
+        "t_comment\nsocial"
+      ],
+      [
+        "t_like",
+        "t_like\nsocial"
+      ],
+      [
+        "t_follow",
+        "t_follow\nsocial"
+      ],
+      [
+        "t_folder",
+        "t_folder\ncollection"
+      ],
+      [
+        "t_favorite",
+        "t_favorite\ncollection"
+      ],
+      [
+        "t_practice",
+        "t_practice\ncollection"
+      ],
+      [
+        "t_practice_media",
+        "t_practice_media\ncollection"
+      ],
+      [
+        "t_practice_history",
+        "t_practice_history\ncollection"
+      ],
+      [
+        "t_review",
+        "t_review\ngovernance"
+      ],
+      [
+        "t_report",
+        "t_report\ngovernance"
+      ],
+      [
+        "t_notification",
+        "t_notification\nnotification"
+      ],
+      [
+        "t_outbox",
+        "t_outbox\nplatform"
+      ],
+      [
+        "t_inbox",
+        "t_inbox\nplatform"
+      ],
+      [
+        "t_command",
+        "t_command\nplatform"
+      ],
+      [
+        "t_audit",
+        "t_audit\ngovernance"
+      ],
+      [
+        "t_daily_activity",
+        "t_daily_activity\nstatistics"
+      ],
+      [
+        "t_view_window",
+        "t_view_window\nstatistics"
+      ],
+      [
+        "t_note_metric",
+        "t_note_metric\nstatistics"
+      ],
+      [
+        "t_daily_metric",
+        "t_daily_metric\nstatistics"
+      ]
+    ],
+    "edges": [
+      [
+        "t_user",
+        "t_user_role",
+        "1 : 0..* user_id"
+      ],
+      [
+        "t_role",
+        "t_user_role",
+        "1 : 0..* role_id"
+      ],
+      [
+        "t_user",
+        "t_session",
+        "1 : 0..* user_id"
+      ],
+      [
+        "t_user",
+        "t_media",
+        "1 : 0..* owner_id"
+      ],
+      [
+        "t_user",
+        "t_note",
+        "1 : 0..* author_id"
+      ],
+      [
+        "t_note",
+        "t_note_media",
+        "1 : 0..* note_id"
+      ],
+      [
+        "t_media",
+        "t_note_media",
+        "1 : 0..* media_id"
+      ],
+      [
+        "t_note",
+        "t_note_topic",
+        "1 : 0..* note_id"
+      ],
+      [
+        "t_topic",
+        "t_note_topic",
+        "1 : 0..* topic_id"
+      ],
+      [
+        "t_user",
+        "t_interest",
+        "1 : 0..* user_id"
+      ],
+      [
+        "t_topic",
+        "t_interest",
+        "1 : 0..* topic_id"
+      ],
+      [
+        "t_user",
+        "t_hidden_note",
+        "1 : 0..* user_id"
+      ],
+      [
+        "t_note",
+        "t_hidden_note",
+        "1 : 0..* note_id"
+      ],
+      [
+        "t_user",
+        "t_comment",
+        "1 : 0..* author_id"
+      ],
+      [
+        "t_note",
+        "t_comment",
+        "1 : 0..* note_id"
+      ],
+      [
+        "t_user",
+        "t_like",
+        "1 : 0..* user_id"
+      ],
+      [
+        "t_note",
+        "t_like",
+        "1 : 0..* note_id"
+      ],
+      [
+        "t_user",
+        "t_follow",
+        "1 : 0..* follower_id"
+      ],
+      [
+        "t_user",
+        "t_follow",
+        "1 : 0..* followee_id"
+      ],
+      [
+        "t_user",
+        "t_folder",
+        "1 : 0..* owner_id"
+      ],
+      [
+        "t_folder",
+        "t_favorite",
+        "1 : 0..* folder_id"
+      ],
+      [
+        "t_user",
+        "t_favorite",
+        "1 : 0..* user_id"
+      ],
+      [
+        "t_note",
+        "t_favorite",
+        "1 : 0..* note_id"
+      ],
+      [
+        "t_user",
+        "t_practice",
+        "1 : 0..* owner_id"
+      ],
+      [
+        "t_note",
+        "t_practice",
+        "1 : 0..* note_id"
+      ],
+      [
+        "t_practice",
+        "t_practice_media",
+        "1 : 0..* practice_id"
+      ],
+      [
+        "t_media",
+        "t_practice_media",
+        "1 : 0..* media_id"
+      ],
+      [
+        "t_practice",
+        "t_practice_history",
+        "1 : 0..* practice_id"
+      ],
+      [
+        "t_user",
+        "t_practice_history",
+        "1 : 0..* actor_id"
+      ],
+      [
+        "t_user",
+        "t_review",
+        "1 : 0..* applicant_id"
+      ],
+      [
+        "t_user",
+        "t_review",
+        "1 : 0..* reviewer_id"
+      ],
+      [
+        "t_user",
+        "t_report",
+        "1 : 0..* reporter_id"
+      ],
+      [
+        "t_user",
+        "t_report",
+        "1 : 0..* handler_id"
+      ],
+      [
+        "t_user",
+        "t_notification",
+        "1 : 0..* recipient_id"
+      ],
+      [
+        "t_user",
+        "t_notification",
+        "1 : 0..* actor_id"
+      ],
+      [
+        "t_user",
+        "t_command",
+        "1 : 0..* actor_id"
+      ],
+      [
+        "t_user",
+        "t_audit",
+        "1 : 0..* actor_id"
+      ],
+      [
+        "t_user",
+        "t_daily_activity",
+        "1 : 0..* user_id"
+      ],
+      [
+        "t_note",
+        "t_view_window",
+        "1 : 0..* note_id"
+      ],
+      [
+        "t_note",
+        "t_note_metric",
+        "1 : 0..* note_id"
+      ]
+    ]
+  }
+]

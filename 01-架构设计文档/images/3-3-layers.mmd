@@ -1,0 +1,16 @@
+flowchart TB
+  W -->|"编译依赖"| WF
+  WF -->|"调用契约"| API
+  APP -->|"实现"| API
+  APP -->|"调用"| D
+  INF -->|"实现端口"| D
+  WF -->|"技术契约"| S
+  P -->|"实现"| S
+  W["接入层 web<br/>Controller / DTO"]
+  WF["应用编排 workflows<br/>事务 / 授权 / 跨模块"]
+  API["模块 api<br/>契约 / record"]
+  APP["模块 application<br/>实现导出API"]
+  D["模块 domain<br/>实体 / 仓储端口"]
+  INF["模块 infrastructure<br/>PO / Mapper / Adapter"]
+  S["shared<br/>稳定技术契约"]
+  P["platform<br/>安全/消息/查询实现"]

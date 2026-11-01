@@ -1,0 +1,1485 @@
+{
+  "scope": "设计结构与交叉引用；未执行API/DDL/Compose/业务测试",
+  "tables": 30,
+  "fields": 243,
+  "httpOperations": 75,
+  "schemas": 65,
+  "figures": 19,
+  "adrs": 12,
+  "checks": 368,
+  "errors": [],
+  "details": [
+    {
+      "name": "30张表同源且DDL无缺失",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_user['username']",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_role['code']",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_user_role['user_id', 'role_id']",
+      "passed": true
+    },
+    {
+      "name": "外键 t_user_role.user_id",
+      "passed": true
+    },
+    {
+      "name": "外键 t_user_role.role_id",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_session['token_hash']",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_session['expires_at']",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_session['user_id', 'revoked_at']",
+      "passed": true
+    },
+    {
+      "name": "外键 t_session.user_id",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_topic['name']",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_topic['category', 'status']",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_media['storage_key']",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_media['owner_id', 'status', 'created_at']",
+      "passed": true
+    },
+    {
+      "name": "外键 t_media.owner_id",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_note['status', 'published_at', 'id']",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_note['author_id', 'status', 'id']",
+      "passed": true
+    },
+    {
+      "name": "外键 t_note.author_id",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_note_media['note_id', 'media_id']",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_note_media['note_id', 'position']",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_note_media['media_id']",
+      "passed": true
+    },
+    {
+      "name": "外键 t_note_media.note_id",
+      "passed": true
+    },
+    {
+      "name": "外键 t_note_media.media_id",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_note_topic['note_id', 'topic_id']",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_note_topic['topic_id', 'note_id']",
+      "passed": true
+    },
+    {
+      "name": "外键 t_note_topic.note_id",
+      "passed": true
+    },
+    {
+      "name": "外键 t_note_topic.topic_id",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_interest['user_id', 'topic_id']",
+      "passed": true
+    },
+    {
+      "name": "外键 t_interest.user_id",
+      "passed": true
+    },
+    {
+      "name": "外键 t_interest.topic_id",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_hidden_note['user_id', 'note_id']",
+      "passed": true
+    },
+    {
+      "name": "外键 t_hidden_note.user_id",
+      "passed": true
+    },
+    {
+      "name": "外键 t_hidden_note.note_id",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_comment['note_id', 'root_id', 'id']",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_comment['author_id', 'id']",
+      "passed": true
+    },
+    {
+      "name": "外键 t_comment.author_id",
+      "passed": true
+    },
+    {
+      "name": "外键 t_comment.note_id",
+      "passed": true
+    },
+    {
+      "name": "外键 t_comment.root_id",
+      "passed": true
+    },
+    {
+      "name": "外键 t_comment.reply_to_id",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_like['user_id', 'note_id']",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_like['note_id', 'id']",
+      "passed": true
+    },
+    {
+      "name": "外键 t_like.user_id",
+      "passed": true
+    },
+    {
+      "name": "外键 t_like.note_id",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_follow['follower_id', 'followee_id']",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_follow['followee_id', 'id']",
+      "passed": true
+    },
+    {
+      "name": "外键 t_follow.follower_id",
+      "passed": true
+    },
+    {
+      "name": "外键 t_follow.followee_id",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_folder['owner_id', 'id']",
+      "passed": true
+    },
+    {
+      "name": "外键 t_folder.owner_id",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_favorite['folder_id', 'note_id']",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_favorite['user_id', 'note_id']",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_favorite['note_id', 'user_id']",
+      "passed": true
+    },
+    {
+      "name": "外键 t_favorite.folder_id",
+      "passed": true
+    },
+    {
+      "name": "外键 t_favorite.user_id",
+      "passed": true
+    },
+    {
+      "name": "外键 t_favorite.note_id",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_practice['owner_id', 'id']",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_practice['note_id', 'public_status']",
+      "passed": true
+    },
+    {
+      "name": "外键 t_practice.owner_id",
+      "passed": true
+    },
+    {
+      "name": "外键 t_practice.note_id",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_practice_media['practice_id', 'media_id']",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_practice_media['practice_id', 'position']",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_practice_media['media_id']",
+      "passed": true
+    },
+    {
+      "name": "外键 t_practice_media.practice_id",
+      "passed": true
+    },
+    {
+      "name": "外键 t_practice_media.media_id",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_practice_history['practice_id', 'id']",
+      "passed": true
+    },
+    {
+      "name": "外键 t_practice_history.practice_id",
+      "passed": true
+    },
+    {
+      "name": "外键 t_practice_history.actor_id",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_review['target_type', 'target_id', 'target_revision']",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_review['status', 'id']",
+      "passed": true
+    },
+    {
+      "name": "外键 t_review.applicant_id",
+      "passed": true
+    },
+    {
+      "name": "外键 t_review.reviewer_id",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_report['open_key']",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_report['status', 'id']",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_report['reporter_id', 'id']",
+      "passed": true
+    },
+    {
+      "name": "外键 t_report.reporter_id",
+      "passed": true
+    },
+    {
+      "name": "外键 t_report.handler_id",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_notification['recipient_id', 'event_id']",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_notification['recipient_id', 'read_at', 'id']",
+      "passed": true
+    },
+    {
+      "name": "外键 t_notification.recipient_id",
+      "passed": true
+    },
+    {
+      "name": "外键 t_notification.actor_id",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_outbox['event_id', 'consumer']",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_outbox['status', 'available_at', 'id']",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_inbox['consumer', 'event_id']",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_command['actor_id', 'scope', 'request_key']",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_command['expires_at']",
+      "passed": true
+    },
+    {
+      "name": "外键 t_command.actor_id",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_audit['target_type', 'target_id', 'id']",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_audit['actor_id', 'id']",
+      "passed": true
+    },
+    {
+      "name": "外键 t_audit.actor_id",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_daily_activity['day', 'user_id']",
+      "passed": true
+    },
+    {
+      "name": "外键 t_daily_activity.user_id",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_view_window['subject_hash', 'note_id', 'window_start']",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_view_window['created_at']",
+      "passed": true
+    },
+    {
+      "name": "外键 t_view_window.note_id",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_note_metric['note_id']",
+      "passed": true
+    },
+    {
+      "name": "外键 t_note_metric.note_id",
+      "passed": true
+    },
+    {
+      "name": "索引字段 t_daily_metric['day', 'scope', 'subject_id', 'metric']",
+      "passed": true
+    },
+    {
+      "name": "OpenAPI本地schema引用全部存在",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/auth/csrf",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/auth/csrf",
+      "passed": true
+    },
+    {
+      "name": "路径参数 post /api/v1/auth/register",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 post /api/v1/auth/register",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 post /api/v1/auth/register",
+      "passed": true
+    },
+    {
+      "name": "路径参数 post /api/v1/auth/login",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 post /api/v1/auth/login",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 post /api/v1/auth/login",
+      "passed": true
+    },
+    {
+      "name": "路径参数 post /api/v1/auth/logout",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 post /api/v1/auth/logout",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 post /api/v1/auth/logout",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/me",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/me",
+      "passed": true
+    },
+    {
+      "name": "路径参数 put /api/v1/me/profile",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 put /api/v1/me/profile",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 put /api/v1/me/profile",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/users/{userId}",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/users/{userId}",
+      "passed": true
+    },
+    {
+      "name": "路径参数 put /api/v1/admin/users/{userId}/status",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 put /api/v1/admin/users/{userId}/status",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 put /api/v1/admin/users/{userId}/status",
+      "passed": true
+    },
+    {
+      "name": "路径参数 put /api/v1/admin/users/{userId}/roles",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 put /api/v1/admin/users/{userId}/roles",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 put /api/v1/admin/users/{userId}/roles",
+      "passed": true
+    },
+    {
+      "name": "路径参数 post /api/v1/media",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 post /api/v1/media",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 post /api/v1/media",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/media/{mediaId}/content",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/media/{mediaId}/content",
+      "passed": true
+    },
+    {
+      "name": "路径参数 post /api/v1/notes",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 post /api/v1/notes",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 post /api/v1/notes",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/me/notes",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/me/notes",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/me/notes/{noteId}",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/me/notes/{noteId}",
+      "passed": true
+    },
+    {
+      "name": "路径参数 put /api/v1/notes/{noteId}",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 put /api/v1/notes/{noteId}",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 put /api/v1/notes/{noteId}",
+      "passed": true
+    },
+    {
+      "name": "路径参数 delete /api/v1/notes/{noteId}",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 delete /api/v1/notes/{noteId}",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 delete /api/v1/notes/{noteId}",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/notes/{noteId}",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/notes/{noteId}",
+      "passed": true
+    },
+    {
+      "name": "路径参数 post /api/v1/notes/{noteId}/submit",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 post /api/v1/notes/{noteId}/submit",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 post /api/v1/notes/{noteId}/submit",
+      "passed": true
+    },
+    {
+      "name": "路径参数 post /api/v1/notes/{noteId}/withdraw",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 post /api/v1/notes/{noteId}/withdraw",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 post /api/v1/notes/{noteId}/withdraw",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/feed",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/feed",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/search",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/search",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/me/preferences",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/me/preferences",
+      "passed": true
+    },
+    {
+      "name": "路径参数 put /api/v1/me/preferences",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 put /api/v1/me/preferences",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 put /api/v1/me/preferences",
+      "passed": true
+    },
+    {
+      "name": "路径参数 delete /api/v1/me/preferences",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 delete /api/v1/me/preferences",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 delete /api/v1/me/preferences",
+      "passed": true
+    },
+    {
+      "name": "路径参数 put /api/v1/me/hidden-notes/{noteId}",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 put /api/v1/me/hidden-notes/{noteId}",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 put /api/v1/me/hidden-notes/{noteId}",
+      "passed": true
+    },
+    {
+      "name": "路径参数 delete /api/v1/me/hidden-notes/{noteId}",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 delete /api/v1/me/hidden-notes/{noteId}",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 delete /api/v1/me/hidden-notes/{noteId}",
+      "passed": true
+    },
+    {
+      "name": "路径参数 put /api/v1/notes/{noteId}/like",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 put /api/v1/notes/{noteId}/like",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 put /api/v1/notes/{noteId}/like",
+      "passed": true
+    },
+    {
+      "name": "路径参数 delete /api/v1/notes/{noteId}/like",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 delete /api/v1/notes/{noteId}/like",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 delete /api/v1/notes/{noteId}/like",
+      "passed": true
+    },
+    {
+      "name": "路径参数 post /api/v1/notes/{noteId}/comments",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 post /api/v1/notes/{noteId}/comments",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 post /api/v1/notes/{noteId}/comments",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/notes/{noteId}/comments",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/notes/{noteId}/comments",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/comments/{commentId}/replies",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/comments/{commentId}/replies",
+      "passed": true
+    },
+    {
+      "name": "路径参数 delete /api/v1/comments/{commentId}",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 delete /api/v1/comments/{commentId}",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 delete /api/v1/comments/{commentId}",
+      "passed": true
+    },
+    {
+      "name": "路径参数 put /api/v1/users/{userId}/follow",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 put /api/v1/users/{userId}/follow",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 put /api/v1/users/{userId}/follow",
+      "passed": true
+    },
+    {
+      "name": "路径参数 delete /api/v1/users/{userId}/follow",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 delete /api/v1/users/{userId}/follow",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 delete /api/v1/users/{userId}/follow",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/users/{userId}/following",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/users/{userId}/following",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/users/{userId}/followers",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/users/{userId}/followers",
+      "passed": true
+    },
+    {
+      "name": "路径参数 post /api/v1/folders",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 post /api/v1/folders",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 post /api/v1/folders",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/folders",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/folders",
+      "passed": true
+    },
+    {
+      "name": "路径参数 put /api/v1/folders/{folderId}",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 put /api/v1/folders/{folderId}",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 put /api/v1/folders/{folderId}",
+      "passed": true
+    },
+    {
+      "name": "路径参数 delete /api/v1/folders/{folderId}",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 delete /api/v1/folders/{folderId}",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 delete /api/v1/folders/{folderId}",
+      "passed": true
+    },
+    {
+      "name": "路径参数 put /api/v1/folders/{folderId}/notes/{noteId}",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 put /api/v1/folders/{folderId}/notes/{noteId}",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 put /api/v1/folders/{folderId}/notes/{noteId}",
+      "passed": true
+    },
+    {
+      "name": "路径参数 delete /api/v1/folders/{folderId}/notes/{noteId}",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 delete /api/v1/folders/{folderId}/notes/{noteId}",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 delete /api/v1/folders/{folderId}/notes/{noteId}",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/folders/{folderId}/notes",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/folders/{folderId}/notes",
+      "passed": true
+    },
+    {
+      "name": "路径参数 post /api/v1/practices",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 post /api/v1/practices",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 post /api/v1/practices",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/practices",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/practices",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/practices/{practiceId}",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/practices/{practiceId}",
+      "passed": true
+    },
+    {
+      "name": "路径参数 post /api/v1/practices/{practiceId}/transition",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 post /api/v1/practices/{practiceId}/transition",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 post /api/v1/practices/{practiceId}/transition",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/practices/{practiceId}/history",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/practices/{practiceId}/history",
+      "passed": true
+    },
+    {
+      "name": "路径参数 put /api/v1/practices/{practiceId}/result",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 put /api/v1/practices/{practiceId}/result",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 put /api/v1/practices/{practiceId}/result",
+      "passed": true
+    },
+    {
+      "name": "路径参数 post /api/v1/practices/{practiceId}/publish-request",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 post /api/v1/practices/{practiceId}/publish-request",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 post /api/v1/practices/{practiceId}/publish-request",
+      "passed": true
+    },
+    {
+      "name": "路径参数 post /api/v1/practices/{practiceId}/unpublish",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 post /api/v1/practices/{practiceId}/unpublish",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 post /api/v1/practices/{practiceId}/unpublish",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/notes/{noteId}/feedback",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/notes/{noteId}/feedback",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/notifications",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/notifications",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/notifications/unread",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/notifications/unread",
+      "passed": true
+    },
+    {
+      "name": "路径参数 put /api/v1/notifications/{notificationId}/read",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 put /api/v1/notifications/{notificationId}/read",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 put /api/v1/notifications/{notificationId}/read",
+      "passed": true
+    },
+    {
+      "name": "路径参数 post /api/v1/notifications/read-all",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 post /api/v1/notifications/read-all",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 post /api/v1/notifications/read-all",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/reviews",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/reviews",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/reviews/{reviewId}",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/reviews/{reviewId}",
+      "passed": true
+    },
+    {
+      "name": "路径参数 post /api/v1/reviews/{reviewId}/decision",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 post /api/v1/reviews/{reviewId}/decision",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 post /api/v1/reviews/{reviewId}/decision",
+      "passed": true
+    },
+    {
+      "name": "路径参数 post /api/v1/reports",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 post /api/v1/reports",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 post /api/v1/reports",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/me/reports",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/me/reports",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/admin/reports",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/admin/reports",
+      "passed": true
+    },
+    {
+      "name": "路径参数 post /api/v1/admin/reports/{reportId}/decision",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 post /api/v1/admin/reports/{reportId}/decision",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 post /api/v1/admin/reports/{reportId}/decision",
+      "passed": true
+    },
+    {
+      "name": "路径参数 post /api/v1/admin/notes/{noteId}/offline",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 post /api/v1/admin/notes/{noteId}/offline",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 post /api/v1/admin/notes/{noteId}/offline",
+      "passed": true
+    },
+    {
+      "name": "路径参数 post /api/v1/admin/comments/{commentId}/hide",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 post /api/v1/admin/comments/{commentId}/hide",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 post /api/v1/admin/comments/{commentId}/hide",
+      "passed": true
+    },
+    {
+      "name": "路径参数 post /api/v1/admin/practices/{practiceId}/offline",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 post /api/v1/admin/practices/{practiceId}/offline",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 post /api/v1/admin/practices/{practiceId}/offline",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/topics",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/topics",
+      "passed": true
+    },
+    {
+      "name": "路径参数 post /api/v1/admin/topics",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 post /api/v1/admin/topics",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 post /api/v1/admin/topics",
+      "passed": true
+    },
+    {
+      "name": "路径参数 put /api/v1/admin/topics/{topicId}",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 put /api/v1/admin/topics/{topicId}",
+      "passed": true
+    },
+    {
+      "name": "CSRF契约 put /api/v1/admin/topics/{topicId}",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/admin/audits",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/admin/audits",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/statistics/me",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/statistics/me",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/statistics/me/ranking",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/statistics/me/ranking",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/admin/statistics/platform",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/admin/statistics/platform",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/admin/statistics/ranking",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/admin/statistics/ranking",
+      "passed": true
+    },
+    {
+      "name": "路径参数 get /api/v1/admin/statistics/governance",
+      "passed": true
+    },
+    {
+      "name": "成功与错误响应 get /api/v1/admin/statistics/governance",
+      "passed": true
+    },
+    {
+      "name": "75个操作ID唯一",
+      "passed": true
+    },
+    {
+      "name": "FR01至27全部有接口映射",
+      "passed": true
+    },
+    {
+      "name": "公开User不含角色或状态",
+      "passed": true
+    },
+    {
+      "name": "审核有私有预览契约",
+      "passed": true
+    },
+    {
+      "name": "笔记更新必须有version",
+      "passed": true
+    },
+    {
+      "name": "SVG可解析 2-1-context",
+      "passed": true
+    },
+    {
+      "name": "图源存在 2-1-context",
+      "passed": true
+    },
+    {
+      "name": "SVG可解析 3-1-modules",
+      "passed": true
+    },
+    {
+      "name": "图源存在 3-1-modules",
+      "passed": true
+    },
+    {
+      "name": "SVG可解析 3-2-containers",
+      "passed": true
+    },
+    {
+      "name": "图源存在 3-2-containers",
+      "passed": true
+    },
+    {
+      "name": "SVG可解析 3-3-layers",
+      "passed": true
+    },
+    {
+      "name": "图源存在 3-3-layers",
+      "passed": true
+    },
+    {
+      "name": "SVG可解析 3-4-domain",
+      "passed": true
+    },
+    {
+      "name": "图源存在 3-4-domain",
+      "passed": true
+    },
+    {
+      "name": "SVG可解析 3-5-submit",
+      "passed": true
+    },
+    {
+      "name": "图源存在 3-5-submit",
+      "passed": true
+    },
+    {
+      "name": "SVG可解析 3-6-upload",
+      "passed": true
+    },
+    {
+      "name": "图源存在 3-6-upload",
+      "passed": true
+    },
+    {
+      "name": "SVG可解析 3-7-stale",
+      "passed": true
+    },
+    {
+      "name": "图源存在 3-7-stale",
+      "passed": true
+    },
+    {
+      "name": "SVG可解析 3-8-broker",
+      "passed": true
+    },
+    {
+      "name": "图源存在 3-8-broker",
+      "passed": true
+    },
+    {
+      "name": "SVG可解析 4-1-er",
+      "passed": true
+    },
+    {
+      "name": "图源存在 4-1-er",
+      "passed": true
+    },
+    {
+      "name": "SVG可解析 4-2-dataflow",
+      "passed": true
+    },
+    {
+      "name": "图源存在 4-2-dataflow",
+      "passed": true
+    },
+    {
+      "name": "SVG可解析 5-1-compile",
+      "passed": true
+    },
+    {
+      "name": "图源存在 5-1-compile",
+      "passed": true
+    },
+    {
+      "name": "SVG可解析 5-2-ci",
+      "passed": true
+    },
+    {
+      "name": "图源存在 5-2-ci",
+      "passed": true
+    },
+    {
+      "name": "SVG可解析 6-1-concurrency",
+      "passed": true
+    },
+    {
+      "name": "图源存在 6-1-concurrency",
+      "passed": true
+    },
+    {
+      "name": "SVG可解析 6-2-redelivery",
+      "passed": true
+    },
+    {
+      "name": "图源存在 6-2-redelivery",
+      "passed": true
+    },
+    {
+      "name": "SVG可解析 6-3-cachefail",
+      "passed": true
+    },
+    {
+      "name": "图源存在 6-3-cachefail",
+      "passed": true
+    },
+    {
+      "name": "SVG可解析 6-4-state",
+      "passed": true
+    },
+    {
+      "name": "图源存在 6-4-state",
+      "passed": true
+    },
+    {
+      "name": "SVG可解析 7-1-deploy",
+      "passed": true
+    },
+    {
+      "name": "图源存在 7-1-deploy",
+      "passed": true
+    },
+    {
+      "name": "SVG可解析 4-1-er-full",
+      "passed": true
+    },
+    {
+      "name": "图源存在 4-1-er-full",
+      "passed": true
+    },
+    {
+      "name": "主文档图链接 images/2-1-context.svg",
+      "passed": true
+    },
+    {
+      "name": "主文档图链接 images/3-1-modules.svg",
+      "passed": true
+    },
+    {
+      "name": "主文档图链接 images/3-2-containers.svg",
+      "passed": true
+    },
+    {
+      "name": "主文档图链接 images/3-3-layers.svg",
+      "passed": true
+    },
+    {
+      "name": "主文档图链接 images/3-4-domain.svg",
+      "passed": true
+    },
+    {
+      "name": "主文档图链接 images/3-5-submit.svg",
+      "passed": true
+    },
+    {
+      "name": "主文档图链接 images/3-6-upload.svg",
+      "passed": true
+    },
+    {
+      "name": "主文档图链接 images/3-8-broker.svg",
+      "passed": true
+    },
+    {
+      "name": "主文档图链接 images/3-7-stale.svg",
+      "passed": true
+    },
+    {
+      "name": "主文档图链接 images/4-1-er.svg",
+      "passed": true
+    },
+    {
+      "name": "主文档图链接 images/4-2-dataflow.svg",
+      "passed": true
+    },
+    {
+      "name": "主文档图链接 images/5-1-compile.svg",
+      "passed": true
+    },
+    {
+      "name": "主文档图链接 images/5-2-ci.svg",
+      "passed": true
+    },
+    {
+      "name": "主文档图链接 images/6-1-concurrency.svg",
+      "passed": true
+    },
+    {
+      "name": "主文档图链接 images/6-2-redelivery.svg",
+      "passed": true
+    },
+    {
+      "name": "主文档图链接 images/6-3-cachefail.svg",
+      "passed": true
+    },
+    {
+      "name": "主文档图链接 images/6-4-state.svg",
+      "passed": true
+    },
+    {
+      "name": "主文档图链接 images/7-1-deploy.svg",
+      "passed": true
+    },
+    {
+      "name": "12条ADR",
+      "passed": true
+    },
+    {
+      "name": "ADR结构 ADR-001-后端框架选型.md",
+      "passed": true
+    },
+    {
+      "name": "ADR结构 ADR-002-前端框架选型.md",
+      "passed": true
+    },
+    {
+      "name": "ADR结构 ADR-003-数据存储与持久层.md",
+      "passed": true
+    },
+    {
+      "name": "ADR结构 ADR-004-缓存粒度与降级.md",
+      "passed": true
+    },
+    {
+      "name": "ADR结构 ADR-005-认证授权与防重放.md",
+      "passed": true
+    },
+    {
+      "name": "ADR结构 ADR-006-部署形态与媒体存储.md",
+      "passed": true
+    },
+    {
+      "name": "ADR结构 ADR-007-可靠异步消息.md",
+      "passed": true
+    },
+    {
+      "name": "ADR结构 ADR-008-业务模块与编排边界.md",
+      "passed": true
+    },
+    {
+      "name": "ADR结构 ADR-009-图片授权与安全边界.md",
+      "passed": true
+    },
+    {
+      "name": "ADR结构 ADR-010-版本化审核与反馈依附.md",
+      "passed": true
+    },
+    {
+      "name": "ADR结构 ADR-011-规则推荐与分页.md",
+      "passed": true
+    },
+    {
+      "name": "ADR结构 ADR-012-统计口径与对账.md",
+      "passed": true
+    },
+    {
+      "name": "12个任务",
+      "passed": true
+    },
+    {
+      "name": "实施复选框未伪勾选",
+      "passed": true
+    },
+    {
+      "name": "并发审核和Outbox终态规则",
+      "passed": true
+    },
+    {
+      "name": "未自动创建业务源码目录",
+      "passed": true
+    }
+  ]
+}

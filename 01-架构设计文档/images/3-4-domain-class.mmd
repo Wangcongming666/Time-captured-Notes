@@ -1,0 +1,74 @@
+classDiagram
+  class User {
+    +long id
+    +AccountStatus status
+    +int authVersion
+  }
+  class Note {
+    +long id
+    +NoteStatus status
+    +int revision
+    +submit()
+    +edit()
+  }
+  class Media {
+    +long id
+    +long ownerId
+    +MediaPurpose purpose
+  }
+  class Topic {
+    +long id
+    +TopicStatus status
+  }
+  class Comment {
+    +long id
+    +long rootId
+    +CommentStatus status
+  }
+  class Follow {
+    +long followerId
+    +long followeeId
+  }
+  class Folder {
+    +long id
+    +long ownerId
+  }
+  class Favorite {
+    +long folderId
+    +long noteId
+  }
+  class Practice {
+    +long id
+    +PracticeStatus status
+    +int feedbackRevision
+    +transition()
+  }
+  class Review {
+    +long id
+    +int targetRevision
+    +ReviewStatus status
+    +decide()
+  }
+  class Report {
+    +long id
+    +ReportStatus status
+    +close()
+  }
+  class Notification {
+    +long id
+    +long recipientId
+    +markRead()
+  }
+User "1" --> "0..*" Note : creates
+Note "1" --> "1..9" Media : binds
+Note "0..*" --> "1..5" Topic : tags
+Note "1" --> "0..*" Comment : receives
+User "1" --> "0..*" Folder : owns
+Folder "1" *-- "0..*" Favorite
+Favorite "0..*" --> "1" Note
+User "1" --> "0..*" Practice : owns
+Practice "0..*" --> "1" Note : refers
+Review --> Note : NOTE target
+Review --> Practice : PRACTICE target
+User "1" --> "0..*" Notification : receives
+User "1" --> "0..*" Follow : follows

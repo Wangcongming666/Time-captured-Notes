@@ -21,3 +21,14 @@
 **/test-results/
 **/playwright-report/
 **/coverage/
+
+# GitHub keeps application source and its build/runtime configuration only.
+/*
+!/.gitignore
+!/.gitattributes
+!/.github/
+!/03-源码/
+**/*.md
+/03-源码/docs/
+/03-源码/scripts/check-http-contract.py
+/03-源码/scripts/requirements.txt

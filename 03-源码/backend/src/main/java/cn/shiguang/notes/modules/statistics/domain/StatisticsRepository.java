@@ -10,4 +10,5 @@ public interface StatisticsRepository {
     List<Map<String,Object>> governance(int days);
     List<Map<String,Object>> ranking(Long author,long before,int size);
     List<Map<String,Object>> notes(long after,int size);
+    void reconcileAll();
 }

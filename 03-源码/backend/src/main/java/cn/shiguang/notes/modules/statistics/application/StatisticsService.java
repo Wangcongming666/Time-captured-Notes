@@ -20,5 +20,5 @@ public class StatisticsService implements StatisticsApi {
     public void active(long user){if(user>0)repo.active(user);}
     public Map<String,Object> dashboard(Actor actor,String scope,int days){if(days!=7&&days!=30)throw BizException.invalid("统计范围只能为7或30日");List<Map<String,Object>> points;if(scope.equals("GOVERNANCE")){if(!actor.has("REVIEWER")&&!actor.has("ADMIN"))throw BizException.forbidden();points=repo.governance(days);}else{if(scope.equals("PLATFORM"))actor.require("ADMIN");else actor.requireLogin();points=repo.points(scope,scope.equals("AUTHOR")?actor.id():0,days);}return Data.map("points",points,"calculatedAt",Instant.now().toString(),"timezone","Asia/Shanghai");}
     public List<Map<String,Object>> ranking(Actor actor,boolean platform,long before,int size){if(platform)actor.require("ADMIN");else actor.requireLogin();return repo.ranking(platform?null:actor.id(),before,size);}
-    public void reconcile(){long after=0;while(true){var rows=repo.notes(after,100);if(rows.isEmpty())return;for(var row:rows){after=Data.id(row,"id");repo.recalculate(after);}}}
+    public void reconcile(){repo.reconcileAll();}
 }

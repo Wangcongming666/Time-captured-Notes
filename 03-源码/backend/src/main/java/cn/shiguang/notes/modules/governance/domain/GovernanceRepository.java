@@ -11,6 +11,7 @@ public interface GovernanceRepository {
     void decideReport(long id,long actor,int version,String status,String reason);
     List<Map<String,Object>> reports(Long user,long before,int size);
     List<Map<String,Object>> topics(long before,int size);
+    List<Map<String,Object>> allTopics(long before,int size);
     long createTopic(String name,String category,String status);
     Map<String,Object> updateTopic(long id,String name,String category,String status);
     void audit(Map<String,Object> fields);

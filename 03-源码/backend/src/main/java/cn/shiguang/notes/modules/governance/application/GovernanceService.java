@@ -21,6 +21,7 @@ public class GovernanceService implements GovernanceApi {
     public void decideReport(Actor actor,long id,int version,String status,String reason){actor.require("REVIEWER");var r=repo.report(id,true);String from=Data.text(r,"status");boolean allowed=from.equals("PENDING")&&status.equals("PROCESSING")||from.equals("PROCESSING")&&Set.of("UPHELD","REJECTED").contains(status);if(!allowed||Data.number(r,"version")!=version)throw BizException.conflict("举报状态或版本不允许此操作");if(reason.isBlank()||reason.length()>500)throw BizException.invalid("请填写处理理由");repo.decideReport(id,actor.id(),version,status,reason);}
     public List<Map<String,Object>> reports(Long user,long before,int size){return repo.reports(user,before,size);}
     public List<Map<String,Object>> topics(long before,int size){return repo.topics(before,size);}
+    public List<Map<String,Object>> allTopics(long before,int size){return repo.allTopics(before,size);}
     private void topic(Map<String,Object> b){String n=Data.text(b,"name"),c=Data.text(b,"category");if(n.isBlank()||n.length()>40||c.isBlank()||c.length()>40||!Set.of("ACTIVE","DISABLED").contains(Data.text(b,"status")))throw BizException.invalid("话题信息不完整");}
     public long createTopic(Map<String,Object> b){topic(b);return repo.createTopic(Data.text(b,"name"),Data.text(b,"category"),Data.text(b,"status"));}
     public Map<String,Object> updateTopic(long id,Map<String,Object> b){topic(b);return repo.updateTopic(id,Data.text(b,"name"),Data.text(b,"category"),Data.text(b,"status"));}

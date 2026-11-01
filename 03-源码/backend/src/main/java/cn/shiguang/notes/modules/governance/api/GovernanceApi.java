@@ -12,6 +12,7 @@ public interface GovernanceApi {
     void decideReport(Actor actor,long id,int version,String status,String reason);
     List<Map<String,Object>> reports(Long user,long before,int size);
     List<Map<String,Object>> topics(long before,int size);
+    List<Map<String,Object>> allTopics(long before,int size);
     long createTopic(Map<String,Object> input);
     Map<String,Object> updateTopic(long id,Map<String,Object> input);
     void audit(Actor actor,String action,String type,long id,Map<String,Object> before,Map<String,Object> after,String reason);

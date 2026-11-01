@@ -1,14 +1,125 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { api, queryString } from '../../api/client'
-import type { Note, Page } from '../../api/types'
-import { useSession } from '../../app/session'
-import RequireLogin from '../../components/RequireLogin.vue'
-import ErrorBanner from '../../components/ErrorBanner.vue'
-const session = useSession(); const notes = ref<Note[]>([]); const cursor = ref<string | null>(null); const more = ref(false); const error = ref(''); const busy = ref(false)
-const statuses: Record<string, string> = { DRAFT: '草稿', PENDING: '审核中', PUBLISHED: '已发布', REJECTED: '已驳回', OFFLINE: '已下架', DELETED: '已删除' }
-async function load(reset = true) { if (!session.user) return; busy.value = true; error.value = ''; try { if (reset) cursor.value = null; const result = await api<Page<Note>>('/me/notes' + queryString({ cursor: cursor.value })); notes.value = reset ? result.items : [...notes.value, ...result.items]; cursor.value = result.nextCursor; more.value = result.hasMore } catch (e) { error.value = e instanceof Error ? e.message : '加载失败' } finally { busy.value = false } }
-async function action(note: Note, type: 'withdraw' | 'delete') { if (type === 'delete' && !confirm('删除后不能恢复，确认删除这篇笔记？')) return; busy.value = true; try { await api('/notes/' + note.id + (type === 'withdraw' ? '/withdraw' : '?version=' + note.version), { method: type === 'withdraw' ? 'POST' : 'DELETE', body: type === 'withdraw' ? { version: note.version } : undefined }); await load() } catch (e) { error.value = e instanceof Error ? e.message : '操作失败' } finally { busy.value = false } }
-onMounted(() => { void load() })
+import { ref, onMounted } from "vue";
+import { api, queryString } from "../../api/client";
+import type { Note, Page } from "../../api/types";
+import { useSession } from "../../app/session";
+import RequireLogin from "../../components/RequireLogin.vue";
+import ErrorBanner from "../../components/ErrorBanner.vue";
+const session = useSession();
+const notes = ref<Note[]>([]);
+const cursor = ref<string | null>(null);
+const more = ref(false);
+const error = ref("");
+const busy = ref(false);
+const statuses: Record<string, string> = {
+  DRAFT: "草稿",
+  PENDING: "审核中",
+  PUBLISHED: "已发布",
+  REJECTED: "已驳回",
+  OFFLINE: "已下架",
+  DELETED: "已删除",
+};
+async function load(reset = true) {
+  if (!session.user) return;
+  busy.value = true;
+  error.value = "";
+  try {
+    if (reset) cursor.value = null;
+    const result = await api<Page<Note>>(
+      "/me/notes" + queryString({ cursor: cursor.value }),
+    );
+    notes.value = reset ? result.items : [...notes.value, ...result.items];
+    cursor.value = result.nextCursor;
+    more.value = result.hasMore;
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : "加载失败";
+  } finally {
+    busy.value = false;
+  }
+}
+async function action(note: Note, type: "withdraw" | "delete") {
+  if (type === "delete" && !confirm("删除后不能恢复，确认删除这篇笔记？"))
+    return;
+  busy.value = true;
+  try {
+    await api(
+      "/notes/" +
+        note.id +
+        (type === "withdraw" ? "/withdraw" : "?version=" + note.version),
+      {
+        method: type === "withdraw" ? "POST" : "DELETE",
+        body: type === "withdraw" ? { version: note.version } : undefined,
+      },
+    );
+    await load();
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : "操作失败";
+  } finally {
+    busy.value = false;
+  }
+}
+onMounted(() => {
+  void load();
+});
 </script>
-<template><RequireLogin><header class="page-heading"><div><h1>我的创作</h1><p>每一篇生活记录，都值得认真对待。</p></div><RouterLink to="/editor" class="button primary">发布新笔记</RouterLink></header><ErrorBanner :message="error" :retry="load" /><div class="row-list"><article v-for="note in notes" :key="note.id" class="list-row"><div><h3>{{ note.title || '未命名草稿' }}</h3><p><span class="status" :class="note.status">{{ statuses[note.status ?? 'DRAFT'] }}</span> <span v-if="note.reason">{{ note.reason }}</span></p></div><div class="row-actions"><RouterLink v-if="note.status === 'PUBLISHED'" :to="'/notes/' + note.id" class="text-button">查看</RouterLink><RouterLink v-if="!['PENDING', 'DELETED'].includes(note.status ?? '')" :to="'/editor/' + note.id" class="text-button">编辑</RouterLink><button v-if="note.status === 'PENDING'" class="text-button" :disabled="busy" @click="action(note, 'withdraw')">撤回审核</button><button v-if="note.status !== 'DELETED'" class="text-button" :disabled="busy" @click="action(note, 'delete')">删除</button></div></article></div><div v-if="!notes.length && !busy" class="empty-state"><h2>写下你的第一篇笔记</h2><p>图文保存为草稿后，可以随时回来继续。</p></div><div v-if="more" class="load-more"><button class="button" :disabled="busy" @click="load(false)">加载更多</button></div></RequireLogin></template>
+<template>
+  <RequireLogin
+    ><header class="page-heading">
+      <div>
+        <h1>我的创作</h1>
+        <p>每一篇生活记录，都值得认真对待。</p>
+      </div>
+      <RouterLink to="/editor" class="button primary">发布新笔记</RouterLink>
+    </header>
+    <ErrorBanner :message="error" :retry="load" />
+    <div class="row-list">
+      <article v-for="note in notes" :key="note.id" class="list-row">
+        <div>
+          <h3>{{ note.title || "未命名草稿" }}</h3>
+          <p>
+            <span class="status" :class="note.status">{{
+              statuses[note.status ?? "DRAFT"]
+            }}</span>
+            <span v-if="note.reason">{{ note.reason }}</span>
+          </p>
+        </div>
+        <div class="row-actions">
+          <RouterLink
+            v-if="note.status === 'PUBLISHED'"
+            :to="'/notes/' + note.id"
+            class="text-button"
+            >查看</RouterLink
+          ><RouterLink
+            v-if="!['PENDING', 'DELETED'].includes(note.status ?? '')"
+            :to="'/editor/' + note.id"
+            class="text-button"
+            >编辑</RouterLink
+          ><button
+            v-if="note.status === 'PENDING'"
+            class="text-button"
+            :disabled="busy"
+            @click="action(note, 'withdraw')"
+          >
+            撤回审核</button
+          ><button
+            v-if="note.status !== 'DELETED'"
+            class="text-button"
+            :disabled="busy"
+            @click="action(note, 'delete')"
+          >
+            删除
+          </button>
+        </div>
+      </article>
+    </div>
+    <div v-if="!notes.length && !busy" class="empty-state">
+      <h2>写下你的第一篇笔记</h2>
+      <p>图文保存为草稿后，可以随时回来继续。</p>
+    </div>
+    <div v-if="more" class="load-more">
+      <button class="button" :disabled="busy" @click="load(false)">
+        加载更多
+      </button>
+    </div></RequireLogin
+  >
+</template>

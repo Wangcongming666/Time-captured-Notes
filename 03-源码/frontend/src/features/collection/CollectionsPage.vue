@@ -1,20 +1,292 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { api } from '../../api/client'
-import type { Folder, Favorite, Practice, Page, Version } from '../../api/types'
-import { useSession } from '../../app/session'
-import RequireLogin from '../../components/RequireLogin.vue'
-import ErrorBanner from '../../components/ErrorBanner.vue'
-const session = useSession(); const router = useRouter(); const tab = ref('folders'); const folders = ref<Folder[]>([]); const selected = ref<Folder | null>(null); const favorites = ref<Favorite[]>([]); const practices = ref<Practice[]>([]); const error = ref(''); const busy = ref(false); const name = ref(''); const editName = ref(''); const editing = ref(false)
-const labels: Record<string, string> = { PLANNED: '想尝试', DOING: '进行中', DONE: '已完成', ABANDONED: '已放弃' }
-async function load() { if (!session.user) return; error.value = ''; try { folders.value = (await api<Page<Folder>>('/folders?size=50')).items; practices.value = (await api<Page<Practice>>('/practices?size=50')).items; if (selected.value) selected.value = folders.value.find(x => x.id === selected.value?.id) ?? null; if (!selected.value && folders.value.length) selected.value = folders.value[0]; if (selected.value) await choose(selected.value) } catch (e) { error.value = e instanceof Error ? e.message : '加载失败' } }
-async function choose(folder: Folder) { selected.value = folder; editName.value = folder.name; editing.value = false; try { favorites.value = (await api<Page<Favorite>>('/folders/' + folder.id + '/notes?size=50')).items } catch (e) { error.value = e instanceof Error ? e.message : '加载失败' } }
-async function createFolder() { busy.value = true; try { await api('/folders', { method: 'POST', body: { name: name.value } }); name.value = ''; await load() } catch (e) { error.value = e instanceof Error ? e.message : '创建失败' } finally { busy.value = false } }
-async function rename() { if (!selected.value) return; busy.value = true; try { await api('/folders/' + selected.value.id, { method: 'PUT', body: { name: editName.value, version: selected.value.version } }); await load() } catch (e) { error.value = e instanceof Error ? e.message : '更新失败' } finally { busy.value = false } }
-async function deleteFolder() { if (!selected.value || !confirm('删除收藏夹及其中的收藏条目？原笔记和实践记录会保留。')) return; try { await api('/folders/' + selected.value.id, { method: 'DELETE' }); selected.value = null; await load() } catch (e) { error.value = e instanceof Error ? e.message : '删除失败' } }
-async function remove(item: Favorite) { if (!selected.value) return; try { await api('/folders/' + selected.value.id + '/notes/' + item.noteId, { method: 'DELETE' }); await choose(selected.value) } catch (e) { error.value = e instanceof Error ? e.message : '移除失败' } }
-async function practice(item: Favorite) { busy.value = true; try { const result = await api<Version>('/practices', { method: 'POST', body: { noteId: item.noteId } }); await router.push('/practices/' + result.id) } catch (e) { error.value = e instanceof Error ? e.message : '创建失败' } finally { busy.value = false } }
-onMounted(load)
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { usePagedList } from "../../app/paging";
+import { api } from "../../api/client";
+import type {
+  Folder,
+  Favorite,
+  Practice,
+  Page,
+  Version,
+} from "../../api/types";
+import { useSession } from "../../app/session";
+import RequireLogin from "../../components/RequireLogin.vue";
+import ErrorBanner from "../../components/ErrorBanner.vue";
+const folderPage = usePagedList<Folder>(() => "/folders?size=50");
+const favoritePage = usePagedList<Favorite>(
+  () => "/folders/" + selected.value?.id + "/notes?size=50",
+);
+const practicePage = usePagedList<Practice>(() => "/practices?size=50");
+async function more(load: () => Promise<void>) {
+  try {
+    await load();
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : "加载失败";
+  }
+}
+const session = useSession();
+const router = useRouter();
+const tab = ref("folders");
+const folders = folderPage.items;
+const selected = ref<Folder | null>(null);
+const favorites = favoritePage.items;
+const practices = practicePage.items;
+const error = ref("");
+const busy = ref(false);
+const name = ref("");
+const editName = ref("");
+const editing = ref(false);
+const labels: Record<string, string> = {
+  PLANNED: "想尝试",
+  DOING: "进行中",
+  DONE: "已完成",
+  ABANDONED: "已放弃",
+};
+async function load() {
+  if (!session.user) return;
+  error.value = "";
+  try {
+    await Promise.all([folderPage.load(true), practicePage.load(true)]);
+    if (selected.value)
+      selected.value =
+        folders.value.find((x) => x.id === selected.value?.id) ?? null;
+    if (!selected.value && folders.value.length)
+      selected.value = folders.value[0];
+    if (selected.value) await choose(selected.value);
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : "加载失败";
+  }
+}
+async function choose(folder: Folder) {
+  selected.value = folder;
+  editName.value = folder.name;
+  editing.value = false;
+  try {
+    await favoritePage.load(true);
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : "加载失败";
+  }
+}
+async function createFolder() {
+  busy.value = true;
+  try {
+    await api("/folders", { method: "POST", body: { name: name.value } });
+    name.value = "";
+    await load();
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : "创建失败";
+  } finally {
+    busy.value = false;
+  }
+}
+async function rename() {
+  if (!selected.value) return;
+  busy.value = true;
+  try {
+    await api("/folders/" + selected.value.id, {
+      method: "PUT",
+      body: { name: editName.value, version: selected.value.version },
+    });
+    await load();
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : "更新失败";
+  } finally {
+    busy.value = false;
+  }
+}
+async function deleteFolder() {
+  if (
+    !selected.value ||
+    !confirm("删除收藏夹及其中的收藏条目？原笔记和实践记录会保留。")
+  )
+    return;
+  try {
+    await api("/folders/" + selected.value.id, { method: "DELETE" });
+    selected.value = null;
+    await load();
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : "删除失败";
+  }
+}
+async function remove(item: Favorite) {
+  if (!selected.value) return;
+  try {
+    await api("/folders/" + selected.value.id + "/notes/" + item.noteId, {
+      method: "DELETE",
+    });
+    await choose(selected.value);
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : "移除失败";
+  }
+}
+async function practice(item: Favorite) {
+  busy.value = true;
+  try {
+    const result = await api<Version>("/practices", {
+      method: "POST",
+      body: { noteId: item.noteId },
+    });
+    await router.push("/practices/" + result.id);
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : "创建失败";
+  } finally {
+    busy.value = false;
+  }
+}
+onMounted(load);
 </script>
-<template><RequireLogin><header class="page-heading"><div><h1>把喜欢，留给下一次尝试</h1><p>收藏灵感，记录实践。所有收藏和计划默认仅自己可见。</p></div></header><nav class="tabs"><button :class="{ active: tab === 'folders' }" @click="tab = 'folders'">我的收藏</button><button :class="{ active: tab === 'practices' }" @click="tab = 'practices'">实践清单</button></nav><ErrorBanner :message="error" :retry="load" /><div v-if="tab === 'folders'" class="split-panel"><aside><h2 class="small-heading">收藏夹</h2><div class="folder-sidebar"><button v-for="folder in folders" :key="folder.id" class="folder-item" :class="{ active: selected?.id === folder.id }" @click="choose(folder)">{{ folder.name }}</button></div><form class="form-stack section" @submit.prevent="createFolder"><label class="field"><span>新建收藏夹</span><input v-model="name" maxlength="30" placeholder="例如：周末想做的事" required></label><button class="button small" :disabled="busy">创建收藏夹</button></form></aside><section v-if="selected"><header class="page-heading"><h2>{{ selected.name }}</h2><div class="action-group"><button class="text-button" @click="editing = !editing">重命名</button><button class="text-button" @click="deleteFolder">删除收藏夹</button></div></header><form v-if="editing" class="inline-form" @submit.prevent="rename"><input v-model="editName" aria-label="收藏夹新名称" maxlength="30" required><button class="button small" :disabled="busy">保存</button></form><article v-for="item in favorites" :key="item.id" class="list-row"><div><h3><RouterLink v-if="item.available" :to="'/notes/' + item.noteId">{{ item.title }}</RouterLink><span v-else class="muted">原笔记已不可见</span></h3><p>{{ item.available ? '把收藏，变成一段亲身体验。' : '不再展示失效内容，你可以移除此条目。' }}</p></div><div class="row-actions"><button v-if="item.available" class="button small primary" :disabled="busy" @click="practice(item)">想尝试</button><button class="text-button" @click="remove(item)">移除</button></div></article><div v-if="!favorites.length" class="empty-state"><h2>这里还空着</h2><p>在笔记详情点击收藏，把喜欢归档到这里。</p><RouterLink to="/" class="button">去发现</RouterLink></div></section><div v-else class="empty-state"><h2>给喜欢的内容一个家</h2><p>先创建一个私有收藏夹。</p></div></div><div v-else class="practice-grid"><RouterLink v-for="item in practices" :key="item.id" :to="'/practices/' + item.id" class="practice-card"><span class="status" :class="item.status">{{ labels[item.status] }}</span><h3>{{ item.resultText?.slice(0, 40) || '笔记 ' + item.noteId + ' 的实践计划' }}</h3><p class="hint">{{ item.sourceAvailable ? '源笔记可查看' : '原笔记已失效，私人记录仍保留' }}</p><span class="text-button">继续记录 →</span></RouterLink><div v-if="!practices.length" class="empty-state"><h2>下一次尝试，从收藏开始</h2><p>在收藏笔记旁点击“想尝试”，创建一份自己的实践记录。</p></div></div></RequireLogin></template>
+<template>
+  <RequireLogin
+    ><header class="page-heading">
+      <div>
+        <h1>把喜欢，留给下一次尝试</h1>
+        <p>收藏灵感，记录实践。所有收藏和计划默认仅自己可见。</p>
+      </div>
+    </header>
+    <nav class="tabs">
+      <button :class="{ active: tab === 'folders' }" @click="tab = 'folders'">
+        我的收藏</button
+      ><button
+        :class="{ active: tab === 'practices' }"
+        @click="tab = 'practices'"
+      >
+        实践清单
+      </button>
+    </nav>
+    <ErrorBanner :message="error" :retry="load" />
+    <div v-if="tab === 'folders'" class="split-panel">
+      <aside>
+        <h2 class="small-heading">收藏夹</h2>
+        <div class="folder-sidebar">
+          <button
+            v-for="folder in folders"
+            :key="folder.id"
+            class="folder-item"
+            :class="{ active: selected?.id === folder.id }"
+            @click="choose(folder)"
+          >
+            {{ folder.name }}</button
+          ><button
+            v-if="folderPage.hasMore.value"
+            class="text-button"
+            :disabled="folderPage.busy.value"
+            @click="more(folderPage.load)"
+          >
+            更多收藏夹
+          </button>
+        </div>
+        <form class="form-stack section" @submit.prevent="createFolder">
+          <label class="field"
+            ><span>新建收藏夹</span
+            ><input
+              v-model="name"
+              maxlength="30"
+              placeholder="例如：周末想做的事"
+              required /></label
+          ><button class="button small" :disabled="busy">创建收藏夹</button>
+        </form>
+      </aside>
+      <section v-if="selected">
+        <header class="page-heading">
+          <h2>{{ selected.name }}</h2>
+          <div class="action-group">
+            <button class="text-button" @click="editing = !editing">
+              重命名</button
+            ><button class="text-button" @click="deleteFolder">
+              删除收藏夹
+            </button>
+          </div>
+        </header>
+        <form v-if="editing" class="inline-form" @submit.prevent="rename">
+          <input
+            v-model="editName"
+            aria-label="收藏夹新名称"
+            maxlength="30"
+            required
+          /><button class="button small" :disabled="busy">保存</button>
+        </form>
+        <article v-for="item in favorites" :key="item.id" class="list-row">
+          <div>
+            <h3>
+              <RouterLink v-if="item.available" :to="'/notes/' + item.noteId">{{
+                item.title
+              }}</RouterLink
+              ><span v-else class="muted">原笔记已不可见</span>
+            </h3>
+            <p>
+              {{
+                item.available
+                  ? "把收藏，变成一段亲身体验。"
+                  : "不再展示失效内容，你可以移除此条目。"
+              }}
+            </p>
+          </div>
+          <div class="row-actions">
+            <button
+              v-if="item.available"
+              class="button small primary"
+              :disabled="busy"
+              @click="practice(item)"
+            >
+              想尝试</button
+            ><button class="text-button" @click="remove(item)">移除</button>
+          </div>
+        </article>
+        <button
+          v-if="favoritePage.hasMore.value"
+          class="button"
+          :disabled="favoritePage.busy.value"
+          @click="more(favoritePage.load)"
+        >
+          更多收藏内容
+        </button>
+        <div v-if="!favorites.length" class="empty-state">
+          <h2>这里还空着</h2>
+          <p>在笔记详情点击收藏，把喜欢归档到这里。</p>
+          <RouterLink to="/" class="button">去发现</RouterLink>
+        </div>
+      </section>
+      <div v-else class="empty-state">
+        <h2>给喜欢的内容一个家</h2>
+        <p>先创建一个私有收藏夹。</p>
+      </div>
+    </div>
+    <div v-else class="practice-grid">
+      <RouterLink
+        v-for="item in practices"
+        :key="item.id"
+        :to="'/practices/' + item.id"
+        class="practice-card"
+        ><span class="status" :class="item.status">{{
+          labels[item.status]
+        }}</span>
+        <h3>
+          {{
+            item.resultText?.slice(0, 40) ||
+            "笔记 " + item.noteId + " 的实践计划"
+          }}
+        </h3>
+        <p class="hint">
+          {{
+            item.sourceAvailable
+              ? "源笔记可查看"
+              : "原笔记已失效，私人记录仍保留"
+          }}
+        </p>
+        <span class="text-button">继续记录 →</span></RouterLink
+      ><button
+        v-if="practicePage.hasMore.value"
+        class="button"
+        :disabled="practicePage.busy.value"
+        @click="more(practicePage.load)"
+      >
+        更多实践记录
+      </button>
+      <div v-if="!practices.length" class="empty-state">
+        <h2>下一次尝试，从收藏开始</h2>
+        <p>在收藏笔记旁点击“想尝试”，创建一份自己的实践记录。</p>
+      </div>
+    </div></RequireLogin
+  >
+</template>

@@ -1,24 +1,498 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { api, mediaUrl } from '../../api/client'
-import type { Note, User, Comment, Folder, Page, Feedback } from '../../api/types'
-import { useSession } from '../../app/session'
-import AppIcon from '../../components/AppIcon.vue'
-import ErrorBanner from '../../components/ErrorBanner.vue'
-const route = useRoute(); const router = useRouter(); const session = useSession(); const note = ref<Note | null>(null); const author = ref<User | null>(null); const comments = ref<Comment[]>([]); const replies = ref<Record<string, Comment[]>>({}); const feedback = ref<Feedback[]>([]); const error = ref(''); const loading = ref(false); const actionBusy = ref(false); const selected = ref(0); const message = ref(''); const replyTo = ref<string | null>(null); const reportReason = ref(''); const folders = ref<Folder[]>([]); const dialog = ref<HTMLDialogElement>(); const newFolder = ref(''); const commentsCursor = ref<string | null>(null); const moreComments = ref(false)
-function signedIn() { if (session.user) return true; void router.push({ path: '/login', query: { next: route.fullPath } }); return false }
-async function load() { note.value = null; error.value = ''; loading.value = true; selected.value = 0; try { note.value = await api<Note>('/notes/' + route.params.id); author.value = await api<User>('/users/' + note.value.authorId); await loadComments(true); feedback.value = (await api<Page<Feedback>>('/notes/' + route.params.id + '/feedback')).items } catch (e) { error.value = e instanceof Error ? e.message : '加载失败'; note.value = null } finally { loading.value = false } }
-async function loadComments(reset: boolean) { const result = await api<Page<Comment>>('/notes/' + route.params.id + '/comments' + (!reset && commentsCursor.value ? '?cursor=' + encodeURIComponent(commentsCursor.value) : '')); comments.value = reset ? result.items : [...comments.value, ...result.items]; commentsCursor.value = result.nextCursor; moreComments.value = result.hasMore }
-async function like() { if (!signedIn() || !note.value) return; actionBusy.value = true; try { const next = !note.value.liked; await api('/notes/' + note.value.id + '/like', { method: next ? 'PUT' : 'DELETE' }); note.value.liked = next; note.value.likeCount = Math.max(0, (note.value.likeCount ?? 0) + (next ? 1 : -1)) } catch (e) { session.notify(e instanceof Error ? e.message : '操作失败') } finally { actionBusy.value = false } }
-async function follow() { if (!signedIn() || !note.value) return; actionBusy.value = true; try { const next = !note.value.following; await api('/users/' + note.value.authorId + '/follow', { method: next ? 'PUT' : 'DELETE' }); note.value.following = next } catch (e) { session.notify(e instanceof Error ? e.message : '操作失败') } finally { actionBusy.value = false } }
-async function openFavorite() { if (!signedIn()) return; try { folders.value = (await api<Page<Folder>>('/folders')).items; dialog.value?.showModal() } catch (e) { session.notify(e instanceof Error ? e.message : '加载失败') } }
-async function addFavorite(folder: Folder) { if (!note.value) return; actionBusy.value = true; try { await api('/folders/' + folder.id + '/notes/' + note.value.id, { method: 'PUT' }); note.value.favorite = true; dialog.value?.close(); session.notify('已收藏到「' + folder.name + '」') } catch (e) { session.notify(e instanceof Error ? e.message : '收藏失败') } finally { actionBusy.value = false } }
-async function createFolder() { if (!newFolder.value.trim()) return; try { await api('/folders', { method: 'POST', body: { name: newFolder.value } }); newFolder.value = ''; folders.value = (await api<Page<Folder>>('/folders')).items } catch (e) { session.notify(e instanceof Error ? e.message : '创建失败') } }
-async function sendComment() { if (!signedIn() || !message.value.trim()) return; actionBusy.value = true; try { await api('/notes/' + route.params.id + '/comments', { method: 'POST', body: { body: message.value, ...(replyTo.value ? { replyToId: replyTo.value } : {}) } }); message.value = ''; replyTo.value = null; replies.value = {}; await loadComments(true) } catch (e) { session.notify(e instanceof Error ? e.message : '评论失败') } finally { actionBusy.value = false } }
-async function showReplies(comment: Comment) { try { replies.value[comment.id] = (await api<Page<Comment>>('/comments/' + comment.id + '/replies')).items } catch (e) { session.notify(e instanceof Error ? e.message : '加载失败') } }
-async function removeComment(comment: Comment) { if (!confirm('确定删除这条评论？')) return; try { await api('/comments/' + comment.id, { method: 'DELETE' }); replies.value = {}; await loadComments(true) } catch (e) { session.notify(e instanceof Error ? e.message : '删除失败') } }
-async function report() { if (!signedIn() || !reportReason.value.trim()) return; actionBusy.value = true; try { await api('/reports', { method: 'POST', body: { targetType: 'NOTE', targetId: route.params.id, reason: reportReason.value } }); reportReason.value = ''; session.notify('举报已提交，可在通知页查看处理进度') } catch (e) { session.notify(e instanceof Error ? e.message : '提交失败') } finally { actionBusy.value = false } }
-watch(() => route.params.id, load); onMounted(load)
+import { ref, onMounted, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { api, mediaUrl } from "../../api/client";
+import type {
+  Note,
+  User,
+  Comment,
+  Folder,
+  Page,
+  Feedback,
+} from "../../api/types";
+import { useSession } from "../../app/session";
+import AppIcon from "../../components/AppIcon.vue";
+import ErrorBanner from "../../components/ErrorBanner.vue";
+const route = useRoute();
+const router = useRouter();
+const session = useSession();
+const note = ref<Note | null>(null);
+const author = ref<User | null>(null);
+const comments = ref<Comment[]>([]);
+const replies = ref<Record<string, Comment[]>>({});
+const feedback = ref<Feedback[]>([]);
+const error = ref("");
+const loading = ref(false);
+const actionBusy = ref(false);
+const selected = ref(0);
+const message = ref("");
+const replyTo = ref<string | null>(null);
+const reportReason = ref("");
+const reportTarget = ref<{ type: string; id: string } | null>(null);
+const reportDetails = ref<HTMLDetailsElement>();
+const folders = ref<Folder[]>([]);
+const dialog = ref<HTMLDialogElement>();
+const newFolder = ref("");
+const commentsCursor = ref<string | null>(null);
+const moreComments = ref(false);
+function signedIn() {
+  if (session.user) return true;
+  void router.push({ path: "/login", query: { next: route.fullPath } });
+  return false;
+}
+async function load() {
+  note.value = null;
+  reportTarget.value = null;
+  error.value = "";
+  loading.value = true;
+  selected.value = 0;
+  try {
+    note.value = await api<Note>("/notes/" + route.params.id);
+    author.value = await api<User>("/users/" + note.value.authorId);
+    await loadComments(true);
+    feedback.value = (
+      await api<Page<Feedback>>("/notes/" + route.params.id + "/feedback")
+    ).items;
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : "加载失败";
+    note.value = null;
+  } finally {
+    loading.value = false;
+  }
+}
+async function loadComments(reset: boolean) {
+  const result = await api<Page<Comment>>(
+    "/notes/" +
+      route.params.id +
+      "/comments" +
+      (!reset && commentsCursor.value
+        ? "?cursor=" + encodeURIComponent(commentsCursor.value)
+        : ""),
+  );
+  comments.value = reset ? result.items : [...comments.value, ...result.items];
+  commentsCursor.value = result.nextCursor;
+  moreComments.value = result.hasMore;
+}
+async function like() {
+  if (!signedIn() || !note.value) return;
+  actionBusy.value = true;
+  try {
+    const next = !note.value.liked;
+    await api("/notes/" + note.value.id + "/like", {
+      method: next ? "PUT" : "DELETE",
+    });
+    note.value.liked = next;
+    note.value.likeCount = Math.max(
+      0,
+      (note.value.likeCount ?? 0) + (next ? 1 : -1),
+    );
+  } catch (e) {
+    session.notify(e instanceof Error ? e.message : "操作失败");
+  } finally {
+    actionBusy.value = false;
+  }
+}
+async function follow() {
+  if (!signedIn() || !note.value) return;
+  actionBusy.value = true;
+  try {
+    const next = !note.value.following;
+    await api("/users/" + note.value.authorId + "/follow", {
+      method: next ? "PUT" : "DELETE",
+    });
+    note.value.following = next;
+  } catch (e) {
+    session.notify(e instanceof Error ? e.message : "操作失败");
+  } finally {
+    actionBusy.value = false;
+  }
+}
+async function openFavorite() {
+  if (!signedIn()) return;
+  try {
+    folders.value = (await api<Page<Folder>>("/folders")).items;
+    dialog.value?.showModal();
+  } catch (e) {
+    session.notify(e instanceof Error ? e.message : "加载失败");
+  }
+}
+async function addFavorite(folder: Folder) {
+  if (!note.value) return;
+  actionBusy.value = true;
+  try {
+    await api("/folders/" + folder.id + "/notes/" + note.value.id, {
+      method: "PUT",
+    });
+    note.value.favorite = true;
+    dialog.value?.close();
+    session.notify("已收藏到「" + folder.name + "」");
+  } catch (e) {
+    session.notify(e instanceof Error ? e.message : "收藏失败");
+  } finally {
+    actionBusy.value = false;
+  }
+}
+async function createFolder() {
+  if (!newFolder.value.trim()) return;
+  try {
+    await api("/folders", { method: "POST", body: { name: newFolder.value } });
+    newFolder.value = "";
+    folders.value = (await api<Page<Folder>>("/folders")).items;
+  } catch (e) {
+    session.notify(e instanceof Error ? e.message : "创建失败");
+  }
+}
+async function sendComment() {
+  if (!signedIn() || !message.value.trim()) return;
+  actionBusy.value = true;
+  try {
+    await api("/notes/" + route.params.id + "/comments", {
+      method: "POST",
+      body: {
+        body: message.value,
+        ...(replyTo.value ? { replyToId: replyTo.value } : {}),
+      },
+    });
+    message.value = "";
+    replyTo.value = null;
+    replies.value = {};
+    await loadComments(true);
+  } catch (e) {
+    session.notify(e instanceof Error ? e.message : "评论失败");
+  } finally {
+    actionBusy.value = false;
+  }
+}
+async function showReplies(comment: Comment) {
+  try {
+    replies.value[comment.id] = (
+      await api<Page<Comment>>("/comments/" + comment.id + "/replies")
+    ).items;
+  } catch (e) {
+    session.notify(e instanceof Error ? e.message : "加载失败");
+  }
+}
+async function removeComment(comment: Comment) {
+  if (!confirm("确定删除这条评论？")) return;
+  try {
+    await api("/comments/" + comment.id, { method: "DELETE" });
+    replies.value = {};
+    await loadComments(true);
+  } catch (e) {
+    session.notify(e instanceof Error ? e.message : "删除失败");
+  }
+}
+function startReport(type: string, id: string) {
+  if (!signedIn()) return;
+  reportTarget.value = { type, id };
+  if (reportDetails.value) {
+    reportDetails.value.open = true;
+    reportDetails.value.scrollIntoView({ behavior: "smooth", block: "center" });
+    reportDetails.value.querySelector("input")?.focus();
+  }
+}
+async function hideNote() {
+  if (!signedIn()) return;
+  try {
+    await api("/me/hidden-notes/" + route.params.id, { method: "PUT" });
+    session.notify("已减少此内容推荐，可在兴趣设置中重置");
+    await router.push("/");
+  } catch (e) {
+    session.notify(e instanceof Error ? e.message : "操作失败");
+  }
+}
+async function report() {
+  if (!signedIn() || !reportReason.value.trim()) return;
+  actionBusy.value = true;
+  try {
+    await api("/reports", {
+      method: "POST",
+      body: {
+        targetType: reportTarget.value?.type ?? "NOTE",
+        targetId: reportTarget.value?.id ?? route.params.id,
+        reason: reportReason.value,
+      },
+    });
+    reportReason.value = "";
+    session.notify("举报已提交，可在通知页查看处理进度");
+  } catch (e) {
+    session.notify(e instanceof Error ? e.message : "提交失败");
+  } finally {
+    actionBusy.value = false;
+  }
+}
+watch(() => route.params.id, load);
+onMounted(load);
 </script>
-<template><ErrorBanner :message="error" :retry="load" /><div v-if="loading" class="loading-state">正在打开笔记…</div><article v-if="note" class="note-detail"><div class="note-gallery"><img v-if="note.mediaIds[selected]" :src="mediaUrl(note.mediaIds[selected])" :alt="note.title + '，第' + (selected + 1) + '张图'"><div v-if="note.mediaIds.length > 1" class="gallery-control"><button class="button small" :disabled="selected === 0" aria-label="上一张" @click="selected--">←</button><span>{{ selected + 1 }} / {{ note.mediaIds.length }}</span><button class="button small" :disabled="selected === note.mediaIds.length - 1" aria-label="下一张" @click="selected++">→</button></div></div><div class="note-panel"><div class="note-author"><RouterLink :to="'/users/' + note.authorId" class="avatar">{{ author?.nickname.slice(0, 1) ?? '拾' }}</RouterLink><RouterLink :to="'/users/' + note.authorId">{{ author?.nickname ?? '作者' }}</RouterLink><button v-if="session.user?.id !== note.authorId" class="button small" :disabled="actionBusy" @click="follow">{{ note.following ? '已关注' : '关注' }}</button></div><h1>{{ note.title }}</h1><p class="note-body">{{ note.body }}</p><div class="note-date">{{ note.publishedAt ? new Date(note.publishedAt).toLocaleString('zh-CN') : '' }}</div><div class="note-toolbar"><button class="icon-action" :class="{ on: note.liked }" :disabled="actionBusy" :aria-pressed="!!note.liked" @click="like"><AppIcon name="follow" />{{ note.likeCount ?? 0 }}</button><button class="icon-action" :class="{ on: note.favorite }" @click="openFavorite"><AppIcon name="collection" />{{ note.favorite ? '已收藏' : '收藏' }}</button><span class="icon-action"><AppIcon name="comment" />{{ note.commentCount ?? comments.length }}</span></div><h2 class="small-heading">一起聊聊</h2><p v-if="!comments.length" class="hint">还没有评论，留下你的第一条感想吧。</p><div v-for="comment in comments" :key="comment.id" class="comment-item"><span class="avatar tiny">{{ comment.authorId.slice(-1) }}</span><div class="spacer"><span class="hint">用户 {{ comment.authorId }}</span><p>{{ comment.body }}</p><div class="comment-meta"><span>{{ new Date(comment.createdAt).toLocaleDateString('zh-CN') }}</span><button v-if="comment.status === 'VISIBLE'" class="text-button" @click="replyTo = comment.id; signedIn()">回复</button><button class="text-button" @click="showReplies(comment)">查看回复</button><button v-if="session.user?.id === comment.authorId && comment.status !== 'DELETED'" class="text-button" @click="removeComment(comment)">删除</button></div><div v-if="replies[comment.id]" class="replies"><div v-for="reply in replies[comment.id]" :key="reply.id" class="comment-item"><div><span class="hint">用户 {{ reply.authorId }}</span><p>{{ reply.body }}</p><div class="comment-meta"><button v-if="reply.status === 'VISIBLE'" class="text-button" @click="replyTo = reply.id; signedIn()">回复</button><button v-if="session.user?.id === reply.authorId" class="text-button" @click="removeComment(reply)">删除</button></div></div></div><p v-if="!replies[comment.id].length" class="hint">暂无回复</p></div></div></div><button v-if="moreComments" class="text-button" @click="loadComments(false)">更多评论</button><form class="comment-composer" @submit.prevent="sendComment"><input v-model="message" :aria-label="replyTo ? '回复评论' : '发表一条评论'" :placeholder="replyTo ? '回复评论…' : '说点什么…'" maxlength="500"><button class="button small primary" :disabled="actionBusy || !message.trim()">发送</button></form><button v-if="replyTo" class="text-button" @click="replyTo = null">取消回复</button><details class="report-form"><summary>举报这篇笔记</summary><form class="inline-form" @submit.prevent="report"><input v-model="reportReason" aria-label="举报原因" maxlength="500" placeholder="请说明具体原因" required><button class="button small" :disabled="actionBusy">提交举报</button></form></details><section v-if="feedback.length" class="section"><h2 class="small-heading">大家实践后的感受</h2><div v-for="item in feedback" :key="item.id" class="list-row"><div><p>{{ item.resultText }}</p><span class="hint">{{ { HELPFUL: '有帮助', NEUTRAL: '一般', NOT_APPLICABLE: '不适用' }[item.helpfulness] }}</span><div class="review-images"><img v-for="id in item.mediaIds" :key="id" :src="mediaUrl(id)" alt="公开实践反馈图片" loading="lazy"></div></div></div></section></div></article><dialog ref="dialog" class="dialog" aria-labelledby="favorite-title"><button class="dialog-close" aria-label="关闭收藏选择" @click="dialog?.close()">×</button><h2 id="favorite-title">收藏到…</h2><p class="hint">收藏夹默认仅你自己可见，也可以把收藏变成一次实践。</p><div class="dialog-list"><button v-for="folder in folders" :key="folder.id" :disabled="actionBusy" @click="addFavorite(folder)">{{ folder.name }}<AppIcon name="arrow" :size="17" /></button><p v-if="!folders.length" class="hint">先创建你的第一个收藏夹</p></div><form class="inline-form" @submit.prevent="createFolder"><input v-model="newFolder" aria-label="新收藏夹名称" maxlength="30" placeholder="新收藏夹名称"><button class="button small">创建</button></form></dialog></template>
+<template>
+  <ErrorBanner :message="error" :retry="load" />
+  <div v-if="loading" class="loading-state">正在打开笔记…</div>
+  <article v-if="note" class="note-detail">
+    <div class="note-gallery">
+      <img
+        v-if="note.mediaIds[selected]"
+        :src="mediaUrl(note.mediaIds[selected])"
+        :alt="note.title + '，第' + (selected + 1) + '张图'"
+      />
+      <div v-if="note.mediaIds.length > 1" class="gallery-control">
+        <button
+          class="button small"
+          :disabled="selected === 0"
+          aria-label="上一张"
+          @click="selected--"
+        >
+          ←</button
+        ><span>{{ selected + 1 }} / {{ note.mediaIds.length }}</span
+        ><button
+          class="button small"
+          :disabled="selected === note.mediaIds.length - 1"
+          aria-label="下一张"
+          @click="selected++"
+        >
+          →
+        </button>
+      </div>
+    </div>
+    <div class="note-panel">
+      <div class="note-author">
+        <RouterLink :to="'/users/' + note.authorId" class="avatar">{{
+          author?.nickname.slice(0, 1) ?? "拾"
+        }}</RouterLink
+        ><RouterLink :to="'/users/' + note.authorId">{{
+          author?.nickname ?? "作者"
+        }}</RouterLink
+        ><button
+          v-if="session.user?.id !== note.authorId"
+          class="button small"
+          :disabled="actionBusy"
+          @click="follow"
+        >
+          {{ note.following ? "已关注" : "关注" }}
+        </button>
+      </div>
+      <h1>{{ note.title }}</h1>
+      <p class="note-body">{{ note.body }}</p>
+      <div class="note-date">
+        {{
+          note.publishedAt
+            ? new Date(note.publishedAt).toLocaleString("zh-CN")
+            : ""
+        }}
+      </div>
+      <div class="note-toolbar">
+        <button
+          class="icon-action"
+          :class="{ on: note.liked }"
+          :disabled="actionBusy"
+          :aria-pressed="!!note.liked"
+          @click="like"
+        >
+          <AppIcon name="follow" />{{ note.likeCount ?? 0 }}</button
+        ><button
+          class="icon-action"
+          :class="{ on: note.favorite }"
+          @click="openFavorite"
+        >
+          <AppIcon name="collection" />{{
+            note.favorite ? "已收藏" : "收藏"
+          }}</button
+        ><span class="icon-action"
+          ><AppIcon name="comment" />{{
+            note.commentCount ?? comments.length
+          }}</span
+        >
+      </div>
+      <h2 class="small-heading">一起聊聊</h2>
+      <p v-if="!comments.length" class="hint">
+        还没有评论，留下你的第一条感想吧。
+      </p>
+      <div v-for="comment in comments" :key="comment.id" class="comment-item">
+        <span class="avatar tiny">{{ comment.authorId.slice(-1) }}</span>
+        <div class="spacer">
+          <span class="hint">用户 {{ comment.authorId }}</span>
+          <p>{{ comment.body }}</p>
+          <div class="comment-meta">
+            <button
+              v-if="comment.status === 'VISIBLE'"
+              class="text-button"
+              @click="startReport('COMMENT', comment.id)"
+            >
+              举报
+            </button>
+            <span>{{
+              new Date(comment.createdAt).toLocaleDateString("zh-CN")
+            }}</span
+            ><button
+              v-if="comment.status === 'VISIBLE'"
+              class="text-button"
+              @click="
+                replyTo = comment.id;
+                signedIn();
+              "
+            >
+              回复</button
+            ><button class="text-button" @click="showReplies(comment)">
+              查看回复</button
+            ><button
+              v-if="
+                session.user?.id === comment.authorId &&
+                comment.status !== 'DELETED'
+              "
+              class="text-button"
+              @click="removeComment(comment)"
+            >
+              删除
+            </button>
+          </div>
+          <div v-if="replies[comment.id]" class="replies">
+            <div
+              v-for="reply in replies[comment.id]"
+              :key="reply.id"
+              class="comment-item"
+            >
+              <div>
+                <span class="hint">用户 {{ reply.authorId }}</span>
+                <p>{{ reply.body }}</p>
+                <div class="comment-meta">
+                  <button
+                    v-if="reply.status === 'VISIBLE'"
+                    class="text-button"
+                    @click="startReport('COMMENT', reply.id)"
+                  >
+                    举报
+                  </button>
+                  <button
+                    v-if="reply.status === 'VISIBLE'"
+                    class="text-button"
+                    @click="
+                      replyTo = reply.id;
+                      signedIn();
+                    "
+                  >
+                    回复</button
+                  ><button
+                    v-if="session.user?.id === reply.authorId"
+                    class="text-button"
+                    @click="removeComment(reply)"
+                  >
+                    删除
+                  </button>
+                </div>
+              </div>
+            </div>
+            <p v-if="!replies[comment.id].length" class="hint">暂无回复</p>
+          </div>
+        </div>
+      </div>
+      <button
+        v-if="moreComments"
+        class="text-button"
+        @click="loadComments(false)"
+      >
+        更多评论
+      </button>
+      <form class="comment-composer" @submit.prevent="sendComment">
+        <input
+          v-model="message"
+          :aria-label="replyTo ? '回复评论' : '发表一条评论'"
+          :placeholder="replyTo ? '回复评论…' : '说点什么…'"
+          maxlength="500"
+        /><button
+          class="button small primary"
+          :disabled="actionBusy || !message.trim()"
+        >
+          发送
+        </button>
+      </form>
+      <button v-if="replyTo" class="text-button" @click="replyTo = null">
+        取消回复
+      </button>
+      <button class="text-button" @click="hideNote">不感兴趣，减少推荐</button>
+      <details ref="reportDetails" class="report-form">
+        <summary>
+          {{
+            reportTarget
+              ? `举报${reportTarget.type === "COMMENT" ? "评论" : "实践反馈"} #${reportTarget.id}`
+              : "举报这篇笔记"
+          }}
+        </summary>
+        <button
+          v-if="reportTarget"
+          class="text-button"
+          @click="reportTarget = null"
+        >
+          改为举报这篇笔记
+        </button>
+        <form class="inline-form" @submit.prevent="report">
+          <input
+            v-model="reportReason"
+            aria-label="举报原因"
+            maxlength="500"
+            placeholder="请说明具体原因"
+            required
+          /><button class="button small" :disabled="actionBusy">
+            提交举报
+          </button>
+        </form>
+      </details>
+      <section v-if="feedback.length" class="section">
+        <h2 class="small-heading">大家实践后的感受</h2>
+        <div v-for="item in feedback" :key="item.id" class="list-row">
+          <div>
+            <p>{{ item.resultText }}</p>
+            <button
+              class="text-button"
+              @click="startReport('PRACTICE', item.id)"
+            >
+              举报反馈
+            </button>
+            <span class="hint">{{
+              { HELPFUL: "有帮助", NEUTRAL: "一般", NOT_APPLICABLE: "不适用" }[
+                item.helpfulness
+              ]
+            }}</span>
+            <div class="review-images">
+              <img
+                v-for="id in item.mediaIds"
+                :key="id"
+                :src="mediaUrl(id)"
+                alt="公开实践反馈图片"
+                loading="lazy"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </article>
+  <dialog ref="dialog" class="dialog" aria-labelledby="favorite-title">
+    <button
+      class="dialog-close"
+      aria-label="关闭收藏选择"
+      @click="dialog?.close()"
+    >
+      ×
+    </button>
+    <h2 id="favorite-title">收藏到…</h2>
+    <p class="hint">收藏夹默认仅你自己可见，也可以把收藏变成一次实践。</p>
+    <div class="dialog-list">
+      <button
+        v-for="folder in folders"
+        :key="folder.id"
+        :disabled="actionBusy"
+        @click="addFavorite(folder)"
+      >
+        {{ folder.name }}<AppIcon name="arrow" :size="17" />
+      </button>
+      <p v-if="!folders.length" class="hint">先创建你的第一个收藏夹</p>
+    </div>
+    <form class="inline-form" @submit.prevent="createFolder">
+      <input
+        v-model="newFolder"
+        aria-label="新收藏夹名称"
+        maxlength="30"
+        placeholder="新收藏夹名称"
+      /><button class="button small">创建</button>
+    </form>
+  </dialog>
+</template>

@@ -4,6 +4,9 @@
   "coverage": 1.0,
   "missing": [],
   "unimplemented": [],
+  "undefinedSecurity": [],
+  "brokenRefs": [],
+  "duplicateOperationIds": 0,
   "routes": [
     "DELETE /api/v1/comments/{}",
     "DELETE /api/v1/folders/{}",

@@ -7553,7 +7553,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       security:
-      - cookieAuth: []
+      - sessionCookie: []
   /api/v1/admin/topics/{topicId}:
     put:
       operationId: op069
@@ -8415,7 +8415,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       security:
-      - cookieAuth: []
+      - sessionCookie: []
 components:
   securitySchemes:
     sessionCookie:

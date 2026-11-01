@@ -12,4 +12,6 @@
 | 6 | arch-doc-sync，扫描真实HTTP路由与设计复制件 | 实现77、契约75，覆盖97.40%；缺GET admin/users和admin/topics | 增加两个管理查询契约，分开AdminUser与私人资料DTO；复查77/77，无幽灵接口 | 将源码契约确认为实施权威，保留设计版本并写差异说明 |
 | 7 | 按arch-doc-sync运行真实HTTP响应检查 | 初次34/35；测试工具错用GET /reports，暴露不支持方法被映射500 | 工具改为GET /admin/reports；后端补405/404映射；35/35真实样本通过 | 强调路由覆盖不能代表响应体覆盖，保留两份报告 |
 
+| 8 | 完成前检查OpenAPI安全方案 | 两个新增操作误写cookieAuth，实际定义名为sessionCookie | 扫描器先复现2条undefinedSecurity，再改正安全方案名，补引用和operationId唯一性检查 | 路由、schema引用和安全方案必须同时校验 |
+
 Skill认知压力测试的独立受测者未能读取工作区，工具报setup refresh错误。该次**不能作为有效认知基线或Skill遵循成功证据**。上述五次以上记录证明的是实际脚本使用和迭代；后续仍须学生本人使用、审核并补充反思。

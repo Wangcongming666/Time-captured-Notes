@@ -23,6 +23,70 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ApiFlowIT {
+  @Test
+  @Order(16)
+  void feedbackApprovalIsInvalidatedBySourceRevisionWithoutLosingPrivateRecord() throws Exception {
+    login("demo_user");
+    String pid =
+        database.one("SELECT id FROM t_practice ORDER BY id DESC LIMIT 1").get("id").toString();
+    var practice = (Map<?, ?>) call("GET", "/practices/" + pid, null, 200).get("data");
+    String note = practice.get("noteId").toString();
+    call(
+        "POST",
+        "/practices/" + pid + "/publish-request",
+        Map.of("version", practice.get("version")),
+        200);
+    login("demo_reviewer");
+    approveTarget(pid, "PRACTICE");
+    login("demo_user");
+    var feedback = (Map<?, ?>) call("GET", "/notes/" + note + "/feedback", null, 200).get("data");
+    assertTrue(
+        ((List<?>) feedback.get("items"))
+            .stream().anyMatch(x -> pid.equals(((Map<?, ?>) x).get("id"))));
+    var source = (Map<?, ?>) call("GET", "/me/notes/" + note, null, 200).get("data");
+    call(
+        "PUT",
+        "/notes/" + note,
+        Map.of(
+            "title",
+            source.get("title"),
+            "body",
+            "源笔记更新后旧反馈不能自动恢复公开",
+            "version",
+            source.get("version"),
+            "mediaIds",
+            source.get("mediaIds"),
+            "topicIds",
+            source.get("topicIds")),
+        200);
+    call("GET", "/notes/" + note, null, 404);
+    call("GET", "/practices/" + pid, null, 200);
+    login("demo_reviewer");
+    approveTarget(note, "NOTE");
+    login("demo_user");
+    var after = (Map<?, ?>) call("GET", "/notes/" + note + "/feedback", null, 200).get("data");
+    assertTrue(((List<?>) after.get("items")).isEmpty());
+  }
+
+  void approveTarget(String target, String type) throws Exception {
+    var queue = (Map<?, ?>) call("GET", "/reviews?size=50", null, 200).get("data");
+    var review =
+        (Map<?, ?>)
+            ((List<?>) queue.get("items"))
+                .stream()
+                    .filter(
+                        x ->
+                            target.equals(((Map<?, ?>) x).get("targetId"))
+                                && type.equals(((Map<?, ?>) x).get("targetType")))
+                    .findFirst()
+                    .orElseThrow();
+    call(
+        "POST",
+        "/reviews/" + review.get("id") + "/decision",
+        Map.of("version", review.get("version"), "decision", "APPROVE"),
+        200);
+  }
+
   @org.springframework.beans.factory.annotation.Autowired
   cn.shiguang.notes.platform.application.MediaMaintenance maintenance;
 

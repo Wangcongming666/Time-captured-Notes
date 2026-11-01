@@ -1,9 +1,10 @@
 FROM maven:3.9.16-eclipse-temurin-21 AS build
 WORKDIR /build
+ARG MAVEN_OPTS
+ENV MAVEN_OPTS=${MAVEN_OPTS}
 COPY pom.xml .
-RUN mvn -B -ntp dependency:go-offline
 COPY src src
-RUN mvn -B -ntp package -DskipTests
+RUN --mount=type=cache,target=/root/.m2 mvn -B -ntp package -DskipTests
 FROM eclipse-temurin:21-jre
 RUN useradd --system --uid 10001 app && mkdir -p /data/media && chown app /data/media
 WORKDIR /app

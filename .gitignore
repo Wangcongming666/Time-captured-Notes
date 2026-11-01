@@ -32,3 +32,4 @@
 /03-源码/docs/
 /03-源码/scripts/check-http-contract.py
 /03-源码/scripts/requirements.txt
+!/README.md

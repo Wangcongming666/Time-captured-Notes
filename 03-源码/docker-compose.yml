@@ -1,0 +1,76 @@
+name: shiguang
+services:
+  mysql:
+    image: mysql:8.4.13
+    environment:
+      MYSQL_DATABASE: shiguang
+      MYSQL_USER: shiguang
+      MYSQL_PASSWORD: ${DB_PASSWORD:?configure .env}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?configure .env}
+      TZ: UTC
+    ports: ["127.0.0.1:13306:3306"]
+    volumes: [mysql_data:/var/lib/mysql]
+    networks: [back]
+    healthcheck:
+      test: [CMD-SHELL, 'MYSQL_PWD="$${MYSQL_ROOT_PASSWORD}" mysqladmin ping -h localhost --silent']
+      interval: 5s
+      timeout: 5s
+      retries: 40
+    mem_limit: 1536m
+  redis:
+    image: redis:8.2.11
+    command: [redis-server, --maxmemory, 256mb, --maxmemory-policy, allkeys-lfu, --save, "", --appendonly, "no"]
+    ports: ["127.0.0.1:16379:6379"]
+    networks: [back]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      retries: 20
+  rabbitmq:
+    image: rabbitmq:4.4.0-management
+    environment:
+      RABBITMQ_DEFAULT_USER: shiguang
+      RABBITMQ_DEFAULT_PASS: ${RABBIT_PASSWORD:?configure .env}
+      RABBITMQ_DEFAULT_VHOST: shiguang
+    ports: ["127.0.0.1:15672:15672", "127.0.0.1:15673:5672"]
+    volumes: [rabbit_data:/var/lib/rabbitmq]
+    networks: [back]
+    healthcheck:
+      test: [CMD, rabbitmq-diagnostics, -q, ping]
+      interval: 5s
+      timeout: 10s
+      retries: 30
+  app:
+    build: ./backend
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/shiguang?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOST: redis
+      RABBIT_HOST: rabbitmq
+      RABBIT_PASSWORD: ${RABBIT_PASSWORD}
+      CURSOR_HMAC_KEY: ${CURSOR_HMAC_KEY}
+      MEDIA_ROOT: /data/media
+      SEED_DEMO: "true"
+      DEMO_PASSWORD: ${DEMO_PASSWORD}
+      JAVA_TOOL_OPTIONS: -Xms256m -Xmx768m
+    depends_on:
+      mysql: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+    volumes: [media_data:/data/media]
+    networks: [edge, back]
+    mem_limit: 1536m
+    restart: unless-stopped
+  web:
+    build: ./frontend
+    ports: ["127.0.0.1:8080:80"]
+    depends_on: [app]
+    networks: [edge]
+    restart: unless-stopped
+networks:
+  edge: {}
+  back: {internal: true}
+volumes:
+  mysql_data: {}
+  rabbit_data: {}
+  media_data: {}

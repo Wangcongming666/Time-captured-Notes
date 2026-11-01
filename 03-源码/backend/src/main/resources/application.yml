@@ -1,0 +1,62 @@
+server:
+  port: 8080
+  tomcat:
+    threads:
+      max: 64
+      min-spare: 8
+spring:
+  application:
+    name: shiguang-notes
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/shiguang?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true}
+    username: ${DB_USER:shiguang}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 16
+      minimum-idle: 4
+      connection-timeout: 1000
+      transaction-isolation: TRANSACTION_READ_COMMITTED
+  flyway:
+    enabled: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      password: ${REDIS_PASSWORD:}
+      timeout: 100ms
+  rabbitmq:
+    host: ${RABBIT_HOST:localhost}
+    username: ${RABBIT_USER:shiguang}
+    password: ${RABBIT_PASSWORD}
+    virtual-host: shiguang
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      mandatory: true
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 20
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 11MB
+  jackson:
+    time-zone: UTC
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+management:
+  server:
+    port: 8081
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: never
+app:
+  media-root: ${MEDIA_ROOT:./uploads}
+  cursor-key: ${CURSOR_HMAC_KEY}
+  secure-cookie: ${SECURE_COOKIE:false}
+  seed-demo: ${SEED_DEMO:false}

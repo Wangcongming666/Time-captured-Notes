@@ -32,4 +32,5 @@ public class ContentService implements ContentApi {
     public Map<String,Object> addMedia(Actor actor,String key,String purpose,String mime,long size,int width,int height,String sha){actor.requireLogin();long id=repo.addMedia(Data.map("owner_id",actor.id(),"storage_key",key,"purpose",purpose,"mime",mime,"size_bytes",size,"width",width,"height",height,"sha256",sha));return Data.map("id",Long.toString(id),"mime",mime,"sizeBytes",size,"width",width,"height",height);}
     public Map<String,Object> media(long id){return repo.media(id,false);}
     public void bind(Actor actor,List<Long> images,String purpose,String type,long target){repo.bind(actor.id(),images,purpose,type,target);}
+    public void avatar(Actor actor,Long next,Long previous){repo.avatar(actor.id(),next,previous);}
 }

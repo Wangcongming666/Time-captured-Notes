@@ -17,4 +17,5 @@ public interface ContentApi {
     Map<String,Object> addMedia(Actor actor,String key,String purpose,String mime,long size,int width,int height,String sha);
     Map<String,Object> media(long id);
     void bind(Actor actor,List<Long> media,String purpose,String ownerType,long ownerId);
+    void avatar(Actor actor,Long next,Long previous);
 }

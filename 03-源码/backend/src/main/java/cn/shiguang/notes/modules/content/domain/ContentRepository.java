@@ -14,4 +14,5 @@ public interface ContentRepository {
     Map<String,Object> media(long id,boolean lock);
     long addMedia(Map<String,Object> values);
     void bind(long owner,List<Long> ids,String purpose,String type,long target);
+    void avatar(long owner,Long next,Long previous);
 }

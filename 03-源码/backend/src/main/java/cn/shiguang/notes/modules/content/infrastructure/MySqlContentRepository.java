@@ -22,6 +22,7 @@ public class MySqlContentRepository implements ContentRepository {
     public boolean activeTopics(List<Long> ids){for(long id:ids)if(db.count("SELECT COUNT(*) FROM t_topic WHERE id=? AND status='ACTIVE'",id)!=1)return false;return true;}
     public Map<String,Object> media(long id,boolean lock){return db.one("SELECT * FROM t_media WHERE id=?"+(lock?" FOR UPDATE":""),id);}
     public long addMedia(Map<String,Object> values){return db.insert("t_media",values);}
+    public void avatar(long owner,Long next,Long previous){var ids=new TreeSet<Long>();if(next!=null)ids.add(next);if(previous!=null)ids.add(previous);for(long id:ids){var m=media(id,true);if(Data.id(m,"ownerId")!=owner||!"AVATAR".equals(m.get("purpose")))throw BizException.forbidden();if(Objects.equals(next,id)&&!Objects.equals(previous,id)&&!"STAGED".equals(m.get("status")))throw BizException.conflict("图片已被使用");}if(previous!=null&&!Objects.equals(next,previous))db.update("UPDATE t_media SET status='STAGED' WHERE id=?",previous);if(next!=null)db.update("UPDATE t_media SET status='BOUND' WHERE id=?",next);}
     public void bind(long actor,List<Long> ids,String purpose,String type,long target){
         boolean note=type.equals("NOTE");String table=note?"t_note_media":"t_practice_media",column=note?"note_id":"practice_id";
         var old=db.query("SELECT media_id FROM "+table+" WHERE "+column+"=?",target).stream().map(r->Data.id(r,"mediaId")).toList();

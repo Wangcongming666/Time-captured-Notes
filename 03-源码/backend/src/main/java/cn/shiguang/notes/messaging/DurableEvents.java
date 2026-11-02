@@ -3,7 +3,8 @@ package cn.shiguang.notes.messaging;
 import cn.shiguang.notes.common.contract.EventPort;
 import cn.shiguang.notes.common.exception.BizException;
 import cn.shiguang.notes.common.util.Data;
-import cn.shiguang.notes.repository.support.Database;
+import cn.shiguang.notes.entity.*;
+import cn.shiguang.notes.mapper.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import java.util.*;
@@ -14,11 +15,11 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 /** Appends a consumer-specific recoverable event in the existing transaction. */
 @Component
 public class DurableEvents implements EventPort {
-  private final Database db;
+  private final OutboxMapper outboxMapper;
   private final ObjectMapper json;
 
-  public DurableEvents(Database db, ObjectMapper json) {
-    this.db = db;
+  public DurableEvents(OutboxMapper outboxMapper, ObjectMapper json) {
+    this.outboxMapper = outboxMapper;
     this.json = json;
   }
 
@@ -32,7 +33,7 @@ public class DurableEvents implements EventPort {
       String... consumers) {
     if (!TransactionSynchronizationManager.isActualTransactionActive())
       throw new IllegalStateException("Outbox requires business transaction");
-    if (db.count("SELECT COUNT(*) FROM t_outbox WHERE status NOT IN ('DONE','DEAD')") > 100000)
+    if (outboxMapper.durableEventsAppend() > 100000)
       throw new BizException(503, "EVENT_BACKLOG", "消息积压，请稍后重试");
     String event = UUID.randomUUID().toString();
     var value =
@@ -60,13 +61,7 @@ public class DurableEvents implements EventPort {
     try {
       String encoded = json.writeValueAsString(value);
       for (String consumer : Set.of(consumers))
-        db.update(
-            "INSERT INTO t_outbox(event_id,consumer,routing_key,payload,available_at)"
-                + " VALUES(?,?,?,?,UTC_TIMESTAMP(3))",
-            event,
-            consumer,
-            type + "." + consumer,
-            encoded);
+        outboxMapper.durableEventsAppend2(event, consumer, type + "." + consumer, encoded);
     } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
       throw new IllegalArgumentException("Invalid event payload", e);
     }

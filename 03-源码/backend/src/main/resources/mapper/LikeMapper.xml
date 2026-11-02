@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.shiguang.notes.mapper.LikeMapper">
+  <insert id="socialLike">
+    INSERT IGNORE INTO t_like(user_id,note_id) VALUES(#{user},#{note})
+  </insert>
+  <delete id="socialLike2">
+    DELETE FROM t_like WHERE user_id=#{user} AND note_id=#{note}
+  </delete>
+  <select id="publicQueryInteraction" resultType="java.util.LinkedHashMap">
+    SELECT (SELECT COUNT(*) FROM t_like WHERE user_id=#{user} AND note_id=#{note}) AS liked,(SELECT COUNT(*) FROM t_favorite WHERE user_id=#{user2} AND note_id=#{note2}) AS favorite,(SELECT COUNT(*) FROM t_follow f JOIN t_note n ON n.author_id=f.followee_id WHERE f.follower_id=#{user3} AND n.id=#{note3}) AS following,COALESCE((SELECT like_count FROM t_note_metric WHERE note_id=#{note4}),0) AS like_count,COALESCE((SELECT favorite_count FROM t_note_metric WHERE note_id=#{note5}),0) AS favorite_count,COALESCE((SELECT comment_count FROM t_note_metric WHERE note_id=#{note6}),0) AS comment_count
+  </select>
+</mapper>

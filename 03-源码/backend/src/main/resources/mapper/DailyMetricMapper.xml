@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.shiguang.notes.mapper.DailyMetricMapper">
+  <insert id="statisticsMetric">
+    INSERT INTO t_daily_metric(day,scope,subject_id,metric,value,calculated_at) VALUES(#{day},#{scope},#{subject},#{metric},#{value},UTC_TIMESTAMP(3)) ON DUPLICATE KEY UPDATE value=<choose><when test="increment">value+VALUES(value)</when><otherwise>VALUES(value)</otherwise></choose>,calculated_at=UTC_TIMESTAMP(3)
+  </insert>
+  <select id="statisticsPoints" resultType="java.util.LinkedHashMap">
+    SELECT day,metric,value FROM t_daily_metric WHERE scope=#{scope} AND subject_id=#{subject} AND day&gt;=DATE_SUB(DATE(DATE_ADD(UTC_TIMESTAMP(),INTERVAL 8 HOUR)),INTERVAL #{value2} DAY) ORDER BY day,metric
+  </select>
+</mapper>

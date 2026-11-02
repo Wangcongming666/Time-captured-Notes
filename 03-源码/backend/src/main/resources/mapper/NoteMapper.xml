@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.shiguang.notes.mapper.NoteMapper">
+  <select id="demoContentRun" resultType="java.lang.Long">
+    SELECT COUNT(*) FROM t_note
+  </select>
+  <select id="contentNote" resultType="cn.shiguang.notes.entity.NoteEntity">
+    SELECT * FROM t_note WHERE id=#{id}<if test="lock"> FOR UPDATE</if>
+  </select>
+  <select id="contentOwned" resultType="cn.shiguang.notes.entity.NoteEntity">
+    SELECT * FROM t_note WHERE author_id=#{author} AND id&lt;#{before} ORDER BY id DESC LIMIT #{size}
+  </select>
+  <update id="contentEdit">
+    UPDATE t_note SET title=#{title},body=#{body},status=#{status},revision=revision+1,version=version+1,reject_reason=NULL WHERE id=#{id} AND version=#{version}
+  </update>
+  <update id="contentState">
+    UPDATE t_note SET status=#{status},reject_reason=#{reason},version=version+1,revision=revision+#{value2},published_at=IF(#{status2}='PUBLISHED',UTC_TIMESTAMP(3),published_at) WHERE id=#{id}
+  </update>
+  <select id="statisticsNotes" resultType="java.util.LinkedHashMap">
+    SELECT id FROM t_note WHERE id&gt;#{after} ORDER BY id LIMIT #{size}
+  </select>
+  <select id="publicQueryNoteVisible" resultType="java.lang.Long">
+    SELECT COUNT(*) FROM t_note WHERE id=#{id} AND status='PUBLISHED'
+  </select>
+<select id="discoveryCandidates" resultType="java.util.LinkedHashMap">
+SELECT n.id,n.author_id,n.title,n.published_at,(SELECT media_id FROM t_note_media nm WHERE nm.note_id=n.id ORDER BY position LIMIT 1) AS cover_media_id,cover.media_type AS cover_media_type,cover.duration_ms, u.avatar_media_id AS author_avatar_media_id,u.nickname AS author_name,COALESCE(m.like_count,0) AS like_count,COALESCE(m.favorite_count,0) AS favorite_count,COALESCE(m.comment_count,0) AS comment_count,EXISTS(SELECT 1 FROM t_follow f WHERE f.follower_id=#{user} AND f.followee_id=n.author_id) AS following,EXISTS(SELECT 1 FROM t_note_topic nt JOIN t_interest i ON i.topic_id=nt.topic_id WHERE nt.note_id=n.id AND i.user_id=#{user} AND i.mode='LIKE') AS interest,EXISTS(SELECT 1 FROM t_note_topic nt JOIN t_interest i ON i.topic_id=nt.topic_id WHERE nt.note_id=n.id AND i.user_id=#{user} AND i.mode='REDUCE') AS reduced FROM t_note n JOIN t_user u ON u.id=n.author_id LEFT JOIN t_note_metric m ON m.note_id=n.id LEFT JOIN t_note_media first_media ON first_media.note_id=n.id AND first_media.position=1 LEFT JOIN t_media cover ON cover.id=first_media.media_id WHERE n.status='PUBLISHED' AND NOT EXISTS(SELECT 1 FROM t_hidden_note h WHERE h.note_id=n.id AND h.user_id=#{user})
+ <if test="mode == 'following'"> AND EXISTS(SELECT 1 FROM t_follow f WHERE f.follower_id=#{user} AND f.followee_id=n.author_id)</if>
+ <if test="category != null and category != '' and category != '全部'"> AND EXISTS(SELECT 1 FROM t_note_topic nt JOIN t_topic t ON t.id=nt.topic_id WHERE nt.note_id=n.id AND t.category=#{category})</if>
+ <if test="pattern != null"> AND (n.title LIKE #{pattern} ESCAPE '!' OR n.body LIKE #{pattern} ESCAPE '!' OR u.nickname LIKE #{pattern} ESCAPE '!')</if>
+ <if test="topic != null"> AND EXISTS(SELECT 1 FROM t_note_topic nt WHERE nt.note_id=n.id AND nt.topic_id=#{topic})</if>
+ <if test="author != null"> AND n.author_id=#{author}</if>
+ ORDER BY n.published_at DESC,n.id DESC LIMIT 300
+
+</select>
+<select id="discoveryVisible" resultType="java.util.LinkedHashMap">
+SELECT n.id FROM t_note n WHERE n.status='PUBLISHED' AND NOT EXISTS(SELECT 1 FROM t_hidden_note h WHERE h.user_id=#{user} AND h.note_id=n.id) AND n.id IN <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+</select>
+<select id="statisticsRanking" resultType="java.util.LinkedHashMap">
+SELECT * FROM (SELECT n.id AS subject_id,n.title AS label,'LIKE' AS metric,COALESCE(m.like_count,0) AS value,ROW_NUMBER() OVER(ORDER BY COALESCE(m.like_count,0) DESC,n.id DESC) AS position FROM t_note n LEFT JOIN t_note_metric m ON m.note_id=n.id WHERE <choose><when test="author == null">n.status='PUBLISHED'</when><otherwise>n.author_id=#{author} AND n.status&lt;&gt;'DELETED'</otherwise></choose>) ranked WHERE position&gt;#{offset} ORDER BY position LIMIT #{size}
+</select>
+</mapper>

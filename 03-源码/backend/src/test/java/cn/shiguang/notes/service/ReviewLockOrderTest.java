@@ -5,9 +5,14 @@ import static org.mockito.Mockito.*;
 
 import cn.shiguang.notes.common.contract.EventPort;
 import cn.shiguang.notes.common.util.Data;
+import cn.shiguang.notes.converter.HttpBoundaryConverter;
 import cn.shiguang.notes.dto.Actor;
+import cn.shiguang.notes.dto.request.ReviewDecisionRequest;
 import cn.shiguang.notes.repository.query.PublicQueryRepository;
+import cn.shiguang.notes.service.application.GovernanceApplicationService;
 import cn.shiguang.notes.service.support.Commands;
+import cn.shiguang.notes.service.support.Pages;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.*;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
@@ -43,22 +48,20 @@ class ReviewLockOrderTest {
     when(content.requirePublic(1, true))
         .thenReturn(Data.map("id", "1", "authorId", "3", "revision", 1));
     var use =
-        new CommunityService(
-            mock(IdentityService.class),
+        new GovernanceApplicationService(
             content,
             collection,
             mock(SocialService.class),
             governance,
-            mock(DiscoveryService.class),
-            mock(NotificationService.class),
-            mock(StatisticsService.class),
             mock(EventPort.class),
             commands,
-            mock(PublicQueryRepository.class));
+            mock(Pages.class),
+            mock(PublicQueryRepository.class),
+            new HttpBoundaryConverter(new ObjectMapper()));
     use.decideReview(
         new Actor(5, Set.of("REVIEWER")),
         4,
-        Data.map("version", 0, "decision", "APPROVE"),
+        new ReviewDecisionRequest(0, "APPROVE", null),
         "integration-review-key");
     var order = inOrder(content, collection, governance);
     order.verify(content).requirePublic(1, true);

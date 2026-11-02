@@ -1,7 +1,9 @@
 package cn.shiguang.notes.schedule;
 
 import cn.shiguang.notes.common.util.Data;
-import cn.shiguang.notes.repository.support.Database;
+import cn.shiguang.notes.entity.*;
+import cn.shiguang.notes.mapper.*;
+import cn.shiguang.notes.repository.support.MapperRows;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -17,12 +19,13 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Component
 public class OutboxDispatcher {
   private static final Logger LOG = LoggerFactory.getLogger(OutboxDispatcher.class);
-  private final Database db;
+  private final OutboxMapper outboxMapper;
   private final TransactionTemplate tx;
   private final RabbitTemplate rabbit;
 
-  public OutboxDispatcher(Database db, TransactionTemplate tx, RabbitTemplate rabbit) {
-    this.db = db;
+  public OutboxDispatcher(
+      OutboxMapper outboxMapper, TransactionTemplate tx, RabbitTemplate rabbit) {
+    this.outboxMapper = outboxMapper;
     this.tx = tx;
     this.rabbit = rabbit;
   }
@@ -32,24 +35,11 @@ public class OutboxDispatcher {
     List<Map<String, Object>> events =
         tx.execute(
             s -> {
-              db.update(
-                  "UPDATE t_outbox SET status='PENDING',lease_token=NULL WHERE (status='LEASED' AND"
-                      + " lease_until<UTC_TIMESTAMP(3)) OR (status='SENT' AND"
-                      + " updated_at<DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 60 SECOND))");
-              var rows =
-                  db.query(
-                      "SELECT * FROM t_outbox WHERE status='PENDING' AND"
-                          + " available_at<=UTC_TIMESTAMP(3) ORDER BY id LIMIT 50 FOR UPDATE SKIP"
-                          + " LOCKED");
+              outboxMapper.outboxDispatcherDispatch();
+              var rows = MapperRows.entities(outboxMapper.outboxDispatcherDispatch2());
               for (var r : rows) {
                 String token = UUID.randomUUID().toString();
-                db.update(
-                    "UPDATE t_outbox SET"
-                        + " status='LEASED',lease_token=?,lease_until=DATE_ADD(UTC_TIMESTAMP(3),INTERVAL"
-                        + " 30 SECOND),publish_attempts=publish_attempts+1 WHERE id=? AND"
-                        + " status='PENDING'",
-                    token,
-                    Data.id(r, "id"));
+                outboxMapper.outboxDispatcherDispatch3(token, Data.id(r, "id"));
                 r.put("leaseToken", token);
               }
               return rows;
@@ -73,19 +63,10 @@ public class OutboxDispatcher {
         var confirm = correlation.getFuture().get(3, TimeUnit.SECONDS);
         if (!confirm.isAck() || correlation.getReturned() != null)
           throw new IllegalStateException("Broker did not accept route");
-        db.update(
-            "UPDATE t_outbox SET status='SENT' WHERE id=? AND status='LEASED' AND lease_token=?",
-            id,
-            token);
+        outboxMapper.outboxDispatcherDispatch4(id, token);
       } catch (Exception ex) {
         if (ex instanceof InterruptedException) Thread.currentThread().interrupt();
-        db.update(
-            "UPDATE t_outbox SET"
-                + " status='PENDING',lease_token=NULL,available_at=DATE_ADD(UTC_TIMESTAMP(3),INTERVAL"
-                + " 5 SECOND),last_error=? WHERE id=? AND status='LEASED' AND lease_token=?",
-            ex.getClass().getSimpleName(),
-            id,
-            token);
+        outboxMapper.outboxDispatcherDispatch5(ex.getClass().getSimpleName(), id, token);
         LOG.warn("Outbox publish pending id={} type={}", id, ex.getClass().getSimpleName());
       }
     }

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.shiguang.notes.mapper.PracticeMapper">
+  <select id="collectionPractice" resultType="cn.shiguang.notes.entity.PracticeEntity">
+    SELECT * FROM t_practice WHERE id=#{id}<if test="lock"> FOR UPDATE</if>
+  </select>
+  <select id="collectionPractices" resultType="cn.shiguang.notes.entity.PracticeEntity">
+    SELECT * FROM t_practice WHERE owner_id=#{owner} AND id&lt;#{before} ORDER BY id DESC LIMIT #{size}
+  </select>
+  <update id="collectionTransition">
+    UPDATE t_practice SET status=#{to},version=version+1,started_at=IF(#{to2}='DOING',UTC_TIMESTAMP(3),started_at),finished_at=IF(#{to3} IN ('DONE','ABANDONED'),UTC_TIMESTAMP(3),finished_at) WHERE id=#{id}
+  </update>
+  <update id="collectionResult">
+    UPDATE t_practice SET result_text=#{text},helpfulness=#{helpfulness},public_status='PRIVATE',feedback_revision=feedback_revision+1,version=version+1 WHERE id=#{id}
+  </update>
+  <update id="collectionPublicState">
+    UPDATE t_practice SET public_status=#{state},source_revision=COALESCE(#{source},source_revision),feedback_revision=feedback_revision+#{value2},version=version+1 WHERE id=#{id}
+  </update>
+  <select id="publicQueryPracticeVisible" resultType="java.lang.Long">
+    SELECT COUNT(*) FROM t_practice p JOIN t_note n ON n.id=p.note_id WHERE p.id=#{id} AND p.public_status='PUBLISHED' AND n.status='PUBLISHED' AND p.source_revision=n.revision
+  </select>
+  <select id="publicQueryFeedback" resultType="java.util.LinkedHashMap">
+    SELECT p.id,p.note_id,p.owner_id AS author_id,p.result_text,p.helpfulness FROM t_practice p JOIN t_note n ON n.id=p.note_id WHERE p.note_id=#{note} AND p.id&lt;#{before} AND p.public_status='PUBLISHED' AND n.status='PUBLISHED' AND p.source_revision=n.revision ORDER BY p.id DESC LIMIT #{size}
+  </select>
+</mapper>

@@ -9,7 +9,7 @@ import cn.shiguang.notes.validation.NoteRules;
 import java.util.*;
 import org.springframework.stereotype.Service;
 
-/** Content aggregate policy. Review creation is coordinated by CommunityService. */
+/** Content aggregate policy. Review creation is coordinated by ContentApplicationService. */
 @Service
 public class ContentServiceImpl implements ContentService {
   private final ContentRepository repo;

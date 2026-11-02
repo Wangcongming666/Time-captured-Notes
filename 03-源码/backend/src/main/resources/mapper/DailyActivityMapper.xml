@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.shiguang.notes.mapper.DailyActivityMapper">
+  <insert id="statisticsActive">
+    INSERT IGNORE INTO t_daily_activity(day,user_id) VALUES(DATE(DATE_ADD(UTC_TIMESTAMP(),INTERVAL 8 HOUR)),#{user})
+  </insert>
+  <select id="statisticsPoints" resultType="java.util.LinkedHashMap">
+    SELECT day,'DAU' AS metric,COUNT(*) AS value FROM t_daily_activity WHERE day&gt;=DATE_SUB(DATE(DATE_ADD(UTC_TIMESTAMP(),INTERVAL 8 HOUR)),INTERVAL #{value0} DAY) GROUP BY day
+  </select>
+</mapper>

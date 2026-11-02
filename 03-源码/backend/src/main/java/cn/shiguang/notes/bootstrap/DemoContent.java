@@ -4,7 +4,9 @@ import cn.shiguang.notes.common.contract.EventPort;
 import cn.shiguang.notes.common.contract.MediaStore;
 import cn.shiguang.notes.common.util.Data;
 import cn.shiguang.notes.dto.Actor;
-import cn.shiguang.notes.repository.support.Database;
+import cn.shiguang.notes.entity.*;
+import cn.shiguang.notes.mapper.*;
+import cn.shiguang.notes.repository.support.MapperRows;
 import cn.shiguang.notes.service.CollectionService;
 import cn.shiguang.notes.service.ContentService;
 import cn.shiguang.notes.service.GovernanceService;
@@ -26,7 +28,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class DemoContent implements ApplicationRunner {
   private final boolean enabled;
   private final MediaStore store;
-  private final Database db;
+  private final NoteMapper noteMapper;
+  private final TopicMapper topicMapper;
+  private final UserMapper userMapper;
   private final ContentService content;
   private final GovernanceService governance;
   private final CollectionService collections;
@@ -35,14 +39,18 @@ public class DemoContent implements ApplicationRunner {
   public DemoContent(
       @Value("${app.seed-demo:false}") boolean enabled,
       MediaStore store,
-      Database db,
+      NoteMapper noteMapper,
+      TopicMapper topicMapper,
+      UserMapper userMapper,
       ContentService content,
       GovernanceService governance,
       CollectionService collections,
       EventPort events) {
     this.enabled = enabled;
     this.store = store;
-    this.db = db;
+    this.noteMapper = noteMapper;
+    this.topicMapper = topicMapper;
+    this.userMapper = userMapper;
     this.content = content;
     this.governance = governance;
     this.collections = collections;
@@ -52,12 +60,12 @@ public class DemoContent implements ApplicationRunner {
   @Override
   @Transactional
   public void run(ApplicationArguments args) throws Exception {
-    if (!enabled || db.count("SELECT COUNT(*) FROM t_note") > 0) return;
-    long owner = Data.id(db.one("SELECT id FROM t_user WHERE username='demo_user'"), "id"),
-        reviewerId = Data.id(db.one("SELECT id FROM t_user WHERE username='demo_reviewer'"), "id");
+    if (!enabled || noteMapper.demoContentRun() > 0) return;
+    long owner = Data.id(MapperRows.one(userMapper.demoContentRun()), "id"),
+        reviewerId = Data.id(MapperRows.one(userMapper.demoContentRun2()), "id");
     var actor = new Actor(owner, Set.of("USER"));
     var reviewer = new Actor(reviewerId, Set.of("USER", "REVIEWER"));
-    var topics = db.query("SELECT id FROM t_topic ORDER BY id LIMIT 8");
+    var topics = MapperRows.list(topicMapper.demoContentRun());
     String[] titles = {
       "演示｜把周末，留给一杯好咖啡",
       "演示｜去森林里，慢慢走一会儿",

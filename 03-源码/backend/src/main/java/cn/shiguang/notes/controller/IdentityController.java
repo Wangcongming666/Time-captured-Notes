@@ -1,10 +1,12 @@
 package cn.shiguang.notes.controller;
 
-import cn.shiguang.notes.common.util.Data;
 import cn.shiguang.notes.dto.ApiResponse;
+import cn.shiguang.notes.dto.request.*;
 import cn.shiguang.notes.security.RequestSecurityFilter;
 import cn.shiguang.notes.service.AccountService;
+import cn.shiguang.notes.vo.*;
 import jakarta.servlet.http.*;
+import jakarta.validation.Valid;
 import java.util.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -44,69 +46,73 @@ public class IdentityController {
   }
 
   @GetMapping("/auth/csrf")
-  public ApiResponse<?> csrf(HttpServletRequest req, HttpServletResponse res) {
+  public ApiResponse<CsrfVO> csrf(HttpServletRequest req, HttpServletResponse res) {
     String token = RequestSecurityFilter.cookie(req, "SG_SESSION");
     if (RequestSecurityFilter.actor(req).id() > 0)
-      return ApiResponse.ok(Map.of("token", use.csrf(token)));
+      return ApiResponse.ok(new CsrfVO(use.csrf(token)));
     String anon = filter.anonymousToken();
     cookie(res, "SG_ANON", anon, 600);
-    return ApiResponse.ok(Map.of("token", filter.anonymousCsrf(anon)));
+    return ApiResponse.ok(new CsrfVO(filter.anonymousCsrf(anon)));
   }
 
   @PostMapping("/auth/register")
   @ResponseStatus(HttpStatus.CREATED)
-  public ApiResponse<?> register(@RequestBody Map<String, Object> body) {
-    return ApiResponse.ok(use.register(body));
+  public ApiResponse<IdVO> register(@Valid @RequestBody RegisterRequest request) {
+    return ApiResponse.ok(use.register(request));
   }
 
   @PostMapping("/auth/login")
-  public ApiResponse<?> login(@RequestBody Map<String, Object> body, HttpServletResponse res) {
-    limits.check("account:" + Data.text(body, "username").toLowerCase(Locale.ROOT), 5);
-    var data = use.login(Data.text(body, "username"), Data.text(body, "password"));
-    String token = (String) data.remove("sessionToken");
+  public ApiResponse<UserVO> login(
+      @Valid @RequestBody LoginRequest request, HttpServletResponse res) {
+    limits.check("account:" + request.username().toLowerCase(Locale.ROOT), 5);
+    var session = use.login(request);
+    String token = session.token();
     cookie(res, "SG_SESSION", token, 86400);
     cookie(res, "SG_ANON", "", 0);
-    return ApiResponse.ok(data);
+    return ApiResponse.ok(session.user());
   }
 
   @PostMapping("/auth/logout")
-  public ApiResponse<?> logout(HttpServletRequest req, HttpServletResponse res) {
+  public ApiResponse<EmptyVO> logout(HttpServletRequest req, HttpServletResponse res) {
     use.logout(RequestSecurityFilter.cookie(req, "SG_SESSION"));
     cookie(res, "SG_SESSION", "", 0);
-    return ApiResponse.ok(Map.of());
+    return ApiResponse.ok(new EmptyVO());
   }
 
   @GetMapping("/me")
-  public ApiResponse<?> me(HttpServletRequest req) {
+  public ApiResponse<UserVO> me(HttpServletRequest req) {
     return ApiResponse.ok(use.profile(RequestSecurityFilter.actor(req)));
   }
 
   @GetMapping("/users/{id}")
-  public ApiResponse<?> user(@PathVariable long id) {
+  public ApiResponse<UserVO> user(@PathVariable long id) {
     return ApiResponse.ok(use.publicProfile(id));
   }
 
   @GetMapping("/users/{id}/summary")
-  public ApiResponse<?> summary(@PathVariable long id, HttpServletRequest req) {
+  public ApiResponse<ProfileSummaryVO> summary(@PathVariable long id, HttpServletRequest req) {
     return ApiResponse.ok(use.summary(RequestSecurityFilter.actor(req), id));
   }
 
   @PutMapping("/me/profile")
-  public ApiResponse<?> profile(@RequestBody Map<String, Object> body, HttpServletRequest req) {
-    return ApiResponse.ok(use.update(RequestSecurityFilter.actor(req), body));
+  public ApiResponse<UserVO> profile(
+      @Valid @RequestBody ProfileRequest request, HttpServletRequest req) {
+    return ApiResponse.ok(use.update(RequestSecurityFilter.actor(req), request));
   }
 
   @PutMapping("/admin/users/{id}/status")
-  public ApiResponse<?> status(
-      @PathVariable long id, @RequestBody Map<String, Object> body, HttpServletRequest req) {
-    use.status(RequestSecurityFilter.actor(req), id, body);
-    return ApiResponse.ok(Map.of());
+  public ApiResponse<EmptyVO> status(
+      @PathVariable long id,
+      @Valid @RequestBody AccountStatusRequest request,
+      HttpServletRequest req) {
+    use.status(RequestSecurityFilter.actor(req), id, request);
+    return ApiResponse.ok(new EmptyVO());
   }
 
   @PutMapping("/admin/users/{id}/roles")
-  public ApiResponse<?> roles(
-      @PathVariable long id, @RequestBody Map<String, Object> body, HttpServletRequest req) {
-    use.roles(RequestSecurityFilter.actor(req), id, body);
-    return ApiResponse.ok(Map.of());
+  public ApiResponse<EmptyVO> roles(
+      @PathVariable long id, @Valid @RequestBody RolesRequest request, HttpServletRequest req) {
+    use.roles(RequestSecurityFilter.actor(req), id, request);
+    return ApiResponse.ok(new EmptyVO());
   }
 }

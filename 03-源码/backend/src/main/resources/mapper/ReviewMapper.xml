@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.shiguang.notes.mapper.ReviewMapper">
+  <select id="governanceReview" resultType="cn.shiguang.notes.entity.ReviewEntity">
+    SELECT * FROM t_review WHERE id=#{id}<if test="lock"> FOR UPDATE</if>
+  </select>
+  <update id="governanceCancelReviews">
+    UPDATE t_review SET status='CANCELLED',version=version+1 WHERE target_type=#{type} AND target_id=#{id} AND status='PENDING'
+  </update>
+  <update id="governanceDecide">
+    UPDATE t_review SET status=#{status},reviewer_id=#{actor},reason=#{reason},decided_at=UTC_TIMESTAMP(3),version=version+1 WHERE id=#{id} AND version=#{version} AND status='PENDING'
+  </update>
+  <select id="governanceReviews" resultType="java.util.LinkedHashMap">
+    SELECT id,target_type,target_id,target_revision,version,status,applicant_id FROM t_review WHERE status=#{status} AND id&lt;#{before} ORDER BY id DESC LIMIT #{size}
+  </select>
+  <select id="statisticsGovernance" resultType="java.util.LinkedHashMap">
+    SELECT DATE(created_at+INTERVAL 8 HOUR) AS day,'REVIEW_PENDING' AS metric,SUM(status='PENDING') AS value FROM t_review WHERE created_at&gt;=DATE_SUB(UTC_TIMESTAMP(),INTERVAL #{days} DAY) GROUP BY DATE(created_at+INTERVAL 8 HOUR) UNION ALL SELECT DATE(created_at+INTERVAL 8 HOUR),'REVIEW_DURATION_MS',AVG(TIMESTAMPDIFF(MICROSECOND,created_at,decided_at))/1000 FROM t_review WHERE decided_at IS NOT NULL AND created_at&gt;=DATE_SUB(UTC_TIMESTAMP(),INTERVAL #{days2} DAY) GROUP BY DATE(created_at+INTERVAL 8 HOUR) UNION ALL SELECT DATE(created_at+INTERVAL 8 HOUR),'REPORT_ACCEPTED',COUNT(*) FROM t_report WHERE created_at&gt;=DATE_SUB(UTC_TIMESTAMP(),INTERVAL #{days3} DAY) GROUP BY DATE(created_at+INTERVAL 8 HOUR) UNION ALL SELECT DATE(created_at+INTERVAL 8 HOUR),'REPORT_CLOSED',SUM(status IN ('UPHELD','REJECTED')) FROM t_report WHERE created_at&gt;=DATE_SUB(UTC_TIMESTAMP(),INTERVAL #{days4} DAY) GROUP BY DATE(created_at+INTERVAL 8 HOUR) UNION ALL SELECT DATE(created_at+INTERVAL 8 HOUR),'PRACTICE_CREATED',COUNT(*) FROM t_practice WHERE created_at&gt;=DATE_SUB(UTC_TIMESTAMP(),INTERVAL #{days5} DAY) GROUP BY DATE(created_at+INTERVAL 8 HOUR) UNION ALL SELECT DATE(created_at+INTERVAL 8 HOUR),'PRACTICE_DONE',SUM(status='DONE') FROM t_practice WHERE created_at&gt;=DATE_SUB(UTC_TIMESTAMP(),INTERVAL #{days6} DAY) GROUP BY DATE(created_at+INTERVAL 8 HOUR)
+  </select>
+  <select id="publicQueryMediaAllowed" resultType="java.lang.Long">
+    SELECT COUNT(*) FROM t_review r WHERE r.status='PENDING' AND r.applicant_id&lt;&gt;#{actorId} AND ((r.target_type='NOTE' AND EXISTS(SELECT 1 FROM t_note n JOIN t_note_media nm ON nm.note_id=n.id WHERE n.id=r.target_id AND n.revision=r.target_revision AND nm.media_id=#{id})) OR (r.target_type='PRACTICE' AND EXISTS(SELECT 1 FROM t_practice p JOIN t_practice_media pm ON pm.practice_id=p.id WHERE p.id=r.target_id AND p.feedback_revision=r.target_revision AND pm.media_id=#{id2})))
+  </select>
+</mapper>

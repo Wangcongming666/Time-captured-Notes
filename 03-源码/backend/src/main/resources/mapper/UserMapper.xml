@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.shiguang.notes.mapper.UserMapper">
+  <select id="demoBootstrapRun" resultType="java.util.LinkedHashMap">
+    SELECT id FROM t_user WHERE username=#{value0}
+  </select>
+  <select id="demoContentRun" resultType="java.util.LinkedHashMap">
+    SELECT id FROM t_user WHERE username='demo_user'
+  </select>
+  <select id="demoContentRun2" resultType="java.util.LinkedHashMap">
+    SELECT id FROM t_user WHERE username='demo_reviewer'
+  </select>
+  <select id="identityUser" resultType="cn.shiguang.notes.entity.UserEntity">
+    SELECT * FROM t_user WHERE id=#{id}<if test="lock"> FOR UPDATE</if>
+  </select>
+  <update id="identityProfile">
+    UPDATE t_user SET nickname=#{name},bio=#{bio},avatar_media_id=#{avatar} WHERE id=#{id}
+  </update>
+  <update id="identityChangeStatus">
+    UPDATE t_user SET status=#{status},auth_version=auth_version+1 WHERE id=#{id}
+  </update>
+  <update id="identityChangeRoles">
+    UPDATE t_user SET auth_version=auth_version+1 WHERE id=#{id}
+  </update>
+  <select id="identityActiveAdministrators" resultType="java.lang.Long">
+    SELECT COUNT(*) FROM t_user u JOIN t_user_role ur ON ur.user_id=u.id JOIN t_role r ON r.id=ur.role_id WHERE r.code='ADMIN' AND u.status='ACTIVE'
+  </select>
+  <select id="publicQueryTargetVisible" resultType="java.lang.Long">
+    SELECT COUNT(*) FROM t_user WHERE id=#{id} AND status='ACTIVE'
+  </select>
+  <select id="publicQueryMediaAllowed" resultType="java.lang.Long">
+    SELECT COUNT(*) FROM t_user WHERE avatar_media_id=#{id} AND status='ACTIVE'
+  </select>
+  <select id="publicQueryUsers" resultType="java.util.LinkedHashMap">
+    SELECT u.id,u.username,u.nickname,u.status,GROUP_CONCAT(r.code ORDER BY r.code) AS role_codes FROM t_user u LEFT JOIN t_user_role ur ON ur.user_id=u.id LEFT JOIN t_role r ON r.id=ur.role_id WHERE u.id&lt;#{before} GROUP BY u.id ORDER BY u.id DESC LIMIT #{size}
+  </select>
+  <select id="commandsRun" resultType="java.util.LinkedHashMap">
+    SELECT id FROM t_user WHERE id=#{actorId} FOR UPDATE
+  </select>
+</mapper>

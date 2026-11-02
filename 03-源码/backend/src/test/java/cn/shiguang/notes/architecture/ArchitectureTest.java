@@ -17,9 +17,10 @@ class ArchitectureTest {
   void classicLayersExistAndLegacyPackagesAreRemoved() {
     for (String type :
         new String[] {
-          "controller.CommunityController",
+          "controller.ContentController",
           "controller.IdentityController",
           "service.ContentService",
+          "service.application.ContentApplicationService",
           "service.impl.ContentServiceImpl",
           "mapper.UserMapper",
           "entity.UserEntity"
@@ -58,6 +59,18 @@ class ArchitectureTest {
         .dependOnClassesThat()
         .resideInAPackage("..service..")
         .check(classes);
+  }
+
+  @Test
+  void productionPersistenceUsesMappersInsteadOfGenericJdbc() {
+    noClasses()
+        .should()
+        .dependOnClassesThat()
+        .resideInAnyPackage("org.springframework.jdbc.core..")
+        .check(classes);
+    assertFalse(classes.contain("cn.shiguang.notes.repository.support.Database"));
+    assertFalse(classes.contain("cn.shiguang.notes.service.CommunityService"));
+    assertFalse(classes.contain("cn.shiguang.notes.service.QueryService"));
   }
 
   @Test

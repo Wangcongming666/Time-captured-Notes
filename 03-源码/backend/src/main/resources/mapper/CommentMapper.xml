@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.shiguang.notes.mapper.CommentMapper">
+  <select id="socialComment" resultType="cn.shiguang.notes.entity.CommentEntity">
+    SELECT * FROM t_comment WHERE id=#{id}<if test="lock"> FOR UPDATE</if>
+  </select>
+  <update id="socialState">
+    UPDATE t_comment SET status=#{state},body=IF(#{state2}='DELETED','',body),version=version+1 WHERE id=#{id} AND version=#{version}
+  </update>
+  <select id="socialComments" resultType="java.util.LinkedHashMap">
+    SELECT id,author_id,note_id,root_id,reply_to_id,IF(status='VISIBLE',body,'该评论已不可见') AS body,status,created_at FROM t_comment WHERE note_id=#{note} AND root_id IS NULL AND id&lt;#{before} ORDER BY id DESC LIMIT #{size}
+  </select>
+  <select id="socialComments2" resultType="java.util.LinkedHashMap">
+    SELECT id,author_id,note_id,root_id,reply_to_id,IF(status='VISIBLE',body,'该回复已不可见') AS body,status,created_at FROM t_comment WHERE note_id=#{note} AND root_id=#{root} AND id&lt;#{before} ORDER BY id DESC LIMIT #{size}
+  </select>
+  <select id="publicQueryCommentVisible" resultType="java.lang.Long">
+    SELECT COUNT(*) FROM t_comment c JOIN t_note n ON n.id=c.note_id WHERE c.id=#{id} AND c.status='VISIBLE' AND n.status='PUBLISHED'
+  </select>
+</mapper>

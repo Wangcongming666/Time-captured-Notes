@@ -4,7 +4,9 @@ import cn.shiguang.notes.common.exception.BizException;
 import cn.shiguang.notes.common.util.Data;
 import cn.shiguang.notes.common.util.Tokens;
 import cn.shiguang.notes.dto.Actor;
-import cn.shiguang.notes.repository.support.Database;
+import cn.shiguang.notes.entity.*;
+import cn.shiguang.notes.mapper.*;
+import cn.shiguang.notes.repository.support.MapperRows;
 import com.fasterxml.jackson.databind.*;
 import java.util.*;
 import java.util.function.Supplier;
@@ -14,11 +16,13 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 /** Actor-serialized command deduplication, committed in the enclosing business transaction. */
 @Component
 public class Commands {
-  private final Database db;
+  private final CommandMapper commandMapper;
+  private final UserMapper userMapper;
   private final ObjectMapper json;
 
-  public Commands(Database db, ObjectMapper json) {
-    this.db = db;
+  public Commands(CommandMapper commandMapper, UserMapper userMapper, ObjectMapper json) {
+    this.commandMapper = commandMapper;
+    this.userMapper = userMapper;
     this.json = json.copy().configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
   }
 
@@ -29,29 +33,16 @@ public class Commands {
       throw BizException.invalid("缺少有效Idempotency-Key");
     if (!TransactionSynchronizationManager.isActualTransactionActive())
       throw new IllegalStateException("Command requires transaction");
-    db.one("SELECT id FROM t_user WHERE id=? FOR UPDATE", actor.id());
+    MapperRows.one(userMapper.commandsRun(actor.id()));
     String hash = Tokens.hash(encode(body));
-    var old =
-        db.optional(
-            "SELECT request_hash,response_json FROM t_command WHERE actor_id=? AND scope=? AND"
-                + " request_key=?",
-            actor.id(),
-            scope,
-            key);
+    var old = MapperRows.optional(commandMapper.commandsRun(actor.id(), scope, key));
     if (old != null) {
       if (!Tokens.same(Data.text(old, "requestHash"), hash))
         throw BizException.conflict("幂等键已用于不同请求");
       return decode(Data.text(old, "responseJson"));
     }
     Object result = operation.get();
-    db.update(
-        "INSERT INTO t_command(actor_id,scope,request_key,request_hash,response_json,expires_at)"
-            + " VALUES(?,?,?,?,?,DATE_ADD(UTC_TIMESTAMP(3),INTERVAL 7 DAY))",
-        actor.id(),
-        scope,
-        key,
-        hash,
-        encode(result));
+    commandMapper.commandsRun2(actor.id(), scope, key, hash, encode(result));
     return result;
   }
 

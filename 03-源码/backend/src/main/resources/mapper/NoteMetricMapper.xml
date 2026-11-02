@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.shiguang.notes.mapper.NoteMetricMapper">
+  <insert id="statisticsRecalculate">
+    INSERT INTO t_note_metric(note_id,view_count,like_count,favorite_count,comment_count,calculated_at) SELECT #{note},COALESCE((SELECT SUM(value) FROM t_daily_metric WHERE scope='NOTE' AND subject_id=#{note2} AND metric='VIEW'),0),(SELECT COUNT(*) FROM t_like WHERE note_id=#{note3}),(SELECT COUNT(DISTINCT user_id) FROM t_favorite WHERE note_id=#{note4}),(SELECT COUNT(*) FROM t_comment WHERE note_id=#{note5} AND status='VISIBLE'),UTC_TIMESTAMP(3) ON DUPLICATE KEY UPDATE view_count=VALUES(view_count),like_count=VALUES(like_count),favorite_count=VALUES(favorite_count),comment_count=VALUES(comment_count),calculated_at=UTC_TIMESTAMP(3)
+  </insert>
+  <insert id="statisticsReconcileAll">
+    INSERT INTO t_note_metric(note_id,view_count,like_count,favorite_count,comment_count,calculated_at) SELECT n.id,COALESCE(v.views,0),COALESCE(l.likes,0),COALESCE(f.favorites,0),COALESCE(c.comments,0),UTC_TIMESTAMP(3) FROM t_note n LEFT JOIN (SELECT subject_id,SUM(value) AS views FROM t_daily_metric WHERE scope='NOTE' AND metric='VIEW' GROUP BY subject_id) v ON v.subject_id=n.id LEFT JOIN (SELECT note_id,COUNT(*) AS likes FROM t_like GROUP BY note_id) l ON l.note_id=n.id LEFT JOIN (SELECT note_id,COUNT(DISTINCT user_id) AS favorites FROM t_favorite GROUP BY note_id) f ON f.note_id=n.id LEFT JOIN (SELECT note_id,COUNT(*) AS comments FROM t_comment WHERE status='VISIBLE' GROUP BY note_id) c ON c.note_id=n.id ON DUPLICATE KEY UPDATE view_count=VALUES(view_count),like_count=VALUES(like_count),favorite_count=VALUES(favorite_count),comment_count=VALUES(comment_count),calculated_at=VALUES(calculated_at)
+  </insert>
+</mapper>

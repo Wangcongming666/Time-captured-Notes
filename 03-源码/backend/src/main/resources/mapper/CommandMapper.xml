@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.shiguang.notes.mapper.CommandMapper">
+  <select id="commandsRun" resultType="java.util.LinkedHashMap">
+    SELECT request_hash,response_json FROM t_command WHERE actor_id=#{actorId} AND scope=#{scope} AND request_key=#{key}
+  </select>
+  <insert id="commandsRun2">
+    INSERT INTO t_command(actor_id,scope,request_key,request_hash,response_json,expires_at) VALUES(#{actorId},#{scope},#{key},#{hash},#{value4},DATE_ADD(UTC_TIMESTAMP(3),INTERVAL 7 DAY))
+  </insert>
+</mapper>

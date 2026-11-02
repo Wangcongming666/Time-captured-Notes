@@ -25,7 +25,7 @@
 | 部署 | Docker Compose、Nginx |
 | 验证 | JUnit、ArchUnit、Testcontainers、Vitest、Playwright、GitHub Actions |
 
-后端按经典 Spring Boot 技术层分包：`controller` 接收请求，`service` 定义业务接口及应用服务，`service.impl` 实现业务逻辑，`repository` 承担现有 SQL 数据访问，`mapper` 和 `entity` 放置 MyBatis-Plus Mapper 与数据库实体。账号、内容、发现、互动、收藏实践、通知、治理、统计八项业务能力保持不变，事务由业务服务协调。MySQL 保存业务事实，Redis 用于缓存与限流，RabbitMQ 处理异步通知和统计。
+后端按经典 Spring Boot 技术层分包：`controller` 接收请求，`service` 定义业务接口及应用服务，`service.impl` 实现业务逻辑，`repository` 封装持久化操作与查询投影，`mapper` 和 `entity` 放置 MyBatis-Plus Mapper 与数据库实体。账号、内容、发现、互动、收藏实践、通知、治理、统计八项业务能力保持不变，事务由业务服务协调。MySQL 保存业务事实，Redis 用于缓存与限流，RabbitMQ 处理异步通知和统计。
 
 后端 Java 目录位于 `03-源码/backend/src/main/java/cn/shiguang/notes`：
 
@@ -34,15 +34,18 @@ cn.shiguang.notes/
 ├── NotesApplication.java       Spring Boot 启动类
 ├── controller/                 REST 控制器、advice 全局异常处理
 ├── service/                    业务接口和应用服务
+│   ├── application/            按业务职责拆分的应用服务、事务协调
 │   ├── impl/                   XxxServiceImpl 实现
 │   └── support/                幂等命令、分页等服务支持
 ├── repository/                 SQL 数据访问接口
-│   ├── impl/                   现有 JDBC SQL 实现
+│   ├── impl/                   调用 Mapper 的持久化实现
 │   ├── query/                  只读聚合查询
 │   └── support/                数据库访问支持
-├── mapper/                     MyBatis-Plus Mapper
-├── entity/                     数据库实体，如 UserEntity
-├── dto/                        请求上下文与统一响应对象
+├── mapper/                     30 个 BaseMapper 与明确查询方法
+├── entity/                     BaseEntity 与 30 张表对应的实体
+├── dto/                        请求 DTO、校验、请求上下文
+├── vo/                         明确字段的响应 VO、分页结果
+├── converter/                  请求与响应转换
 ├── config/                     Spring 配置
 ├── security/                   认证、CSRF、限流
 ├── cache/                      Redis 缓存
@@ -54,7 +57,11 @@ cn.shiguang.notes/
 └── common/                     公共契约、工具、业务异常
 ```
 
-`UserMapper extends BaseMapper<UserEntity>` 保留实际 MyBatis-Plus 集成，其余已有 SQL 继续由 repository 执行。本次调整只改变 Java 组织方式，不更改数据库结构或 HTTP 接口地址。架构测试约束 Controller 经 Service 访问持久层，并防止持久层反向依赖 Controller/Service。
+全部 30 张表都有完整实体和对应 `BaseMapper<XxxEntity>`，包含字段映射、主键、时间与数值类型。生产读写经 Mapper 执行，复杂查询位于 `src/main/resources/mapper` 的 XML 中，使用绑定参数和受控动态条件；生产代码不再使用通用 JDBC 执行器。数据库迁移脚本和现有 HTTP 路径保持兼容。
+
+控制器按业务职责拆分，经 `service/application` 中的应用服务协调业务 Service 与 Repository。请求使用具名 DTO 和 Bean Validation，响应使用明确字段的 VO，实体不直接对外返回。内部持久化投影、幂等结果快照与消息载荷仍使用受控 Map，并在 HTTP 边界转换为 VO。
+
+事务保留行锁、显式版本比较、幂等命令及 Outbox/Inbox 机制。架构测试约束层间依赖，并禁止生产代码依赖 JDBC 执行器；实体契约测试检查所有表字段与 Mapper 泛型，真实 MySQL 集成测试验证全部实体的插入、查询和更新。
 
 ## 快速启动
 

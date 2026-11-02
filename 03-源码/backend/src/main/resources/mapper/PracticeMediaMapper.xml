@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.shiguang.notes.mapper.PracticeMediaMapper">
+  <select id="collectionPractice" resultType="java.util.LinkedHashMap">
+    SELECT media_id FROM t_practice_media WHERE practice_id=#{id} ORDER BY position
+  </select>
+  <select id="publicQueryMediaAllowed" resultType="java.lang.Long">
+    SELECT COUNT(*) FROM t_practice_media pm JOIN t_practice p ON p.id=pm.practice_id JOIN t_note n ON n.id=p.note_id WHERE pm.media_id=#{id} AND p.public_status='PUBLISHED' AND n.status='PUBLISHED' AND p.source_revision=n.revision
+  </select>
+  <select id="bindingMedia" resultType="java.util.LinkedHashMap">
+    SELECT media_id FROM t_practice_media WHERE practice_id=#{target}
+  </select>
+  <delete id="deleteBindings">DELETE FROM t_practice_media WHERE practice_id=#{target}</delete>
+  <insert id="insertBinding">INSERT INTO t_practice_media(practice_id,media_id,position) VALUES(#{target},#{mediaId},#{position})</insert>
+</mapper>

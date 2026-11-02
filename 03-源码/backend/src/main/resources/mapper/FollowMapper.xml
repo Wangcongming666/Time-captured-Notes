@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.shiguang.notes.mapper.FollowMapper">
+  <insert id="socialFollow">
+    INSERT IGNORE INTO t_follow(follower_id,followee_id) VALUES(#{from},#{to})
+  </insert>
+  <delete id="socialFollow2">
+    DELETE FROM t_follow WHERE follower_id=#{from} AND followee_id=#{to}
+  </delete>
+  <select id="socialFollows" resultType="java.util.LinkedHashMap">
+    <choose><when test="followers">SELECT f.id AS relation_id,u.id,u.nickname,u.bio,u.avatar_media_id FROM t_follow f JOIN t_user u ON u.id=f.follower_id WHERE f.followee_id=#{user} AND f.id&lt;#{before} AND u.status='ACTIVE' ORDER BY f.id DESC LIMIT #{size}</when><otherwise>SELECT f.id AS relation_id,u.id,u.nickname,u.bio,u.avatar_media_id FROM t_follow f JOIN t_user u ON u.id=f.followee_id WHERE f.follower_id=#{user} AND f.id&lt;#{before} AND u.status='ACTIVE' ORDER BY f.id DESC LIMIT #{size}</otherwise></choose>
+  </select>
+  <select id="publicQueryProfileSummary" resultType="java.util.LinkedHashMap">
+    SELECT (SELECT COUNT(*) FROM t_follow WHERE follower_id=#{user}) AS following_count,(SELECT COUNT(*) FROM t_follow WHERE followee_id=#{user2}) AS follower_count,(SELECT COUNT(*) FROM t_note WHERE author_id=#{user3} AND status='PUBLISHED') AS note_count,(SELECT COALESCE(SUM(m.like_count+m.favorite_count),0) FROM t_note n JOIN t_note_metric m ON m.note_id=n.id WHERE n.author_id=#{user4} AND n.status='PUBLISHED') AS appreciation_count,EXISTS(SELECT 1 FROM t_follow WHERE follower_id=#{viewer} AND followee_id=#{user5}) AS following
+  </select>
+</mapper>

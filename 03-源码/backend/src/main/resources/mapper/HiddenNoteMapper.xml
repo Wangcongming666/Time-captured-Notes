@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.shiguang.notes.mapper.HiddenNoteMapper">
+  <insert id="discoveryHide">
+    INSERT IGNORE INTO t_hidden_note(user_id,note_id) VALUES(#{user},#{note})
+  </insert>
+  <delete id="discoveryHide2">
+    DELETE FROM t_hidden_note WHERE user_id=#{user} AND note_id=#{note}
+  </delete>
+  <delete id="discoveryReset">
+    DELETE FROM t_hidden_note WHERE user_id=#{user}
+  </delete>
+</mapper>

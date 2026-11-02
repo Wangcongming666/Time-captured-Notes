@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.shiguang.notes.mapper.SessionMapper">
+  <select id="identitySession" resultType="java.util.LinkedHashMap">
+    SELECT s.*,u.status AS user_status,u.auth_version AS current_auth_version FROM t_session s JOIN t_user u ON u.id=s.user_id WHERE s.token_hash=#{hash} AND s.revoked_at IS NULL AND s.expires_at&gt;UTC_TIMESTAMP(3)
+  </select>
+  <insert id="identityAddSession">
+    INSERT INTO t_session(token_hash,user_id,auth_version,csrf_hash,expires_at) VALUES(#{hash},#{id},#{v},#{csrf},DATE_ADD(UTC_TIMESTAMP(3),INTERVAL 24 HOUR))
+  </insert>
+  <update id="identityRevoke">
+    UPDATE t_session SET revoked_at=UTC_TIMESTAMP(3) WHERE token_hash=#{hash}
+  </update>
+  <update id="identityCsrf">
+    UPDATE t_session SET csrf_hash=#{csrf} WHERE token_hash=#{hash} AND revoked_at IS NULL
+  </update>
+</mapper>

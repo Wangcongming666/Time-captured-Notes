@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.shiguang.notes.mapper.OutboxMapper">
+  <select id="durableEventsAppend" resultType="java.lang.Long">
+    SELECT COUNT(*) FROM t_outbox WHERE status NOT IN ('DONE','DEAD')
+  </select>
+  <insert id="durableEventsAppend2">
+    INSERT INTO t_outbox(event_id,consumer,routing_key,payload,available_at) VALUES(#{event},#{consumer},#{value2},#{encoded},UTC_TIMESTAMP(3))
+  </insert>
+  <select id="inboxTransactionsConsume" resultType="cn.shiguang.notes.entity.OutboxEntity">
+    SELECT * FROM t_outbox WHERE id=#{id} FOR UPDATE
+  </select>
+  <update id="inboxTransactionsConsume2">
+    UPDATE t_outbox SET status='DONE',lease_token=NULL WHERE id=#{id}
+  </update>
+  <update id="inboxTransactionsConsume3">
+    UPDATE t_outbox SET status='DONE',lease_token=NULL,last_error=NULL WHERE id=#{id}
+  </update>
+  <select id="inboxTransactionsFailed" resultType="cn.shiguang.notes.entity.OutboxEntity">
+    SELECT * FROM t_outbox WHERE id=#{id} FOR UPDATE
+  </select>
+  <update id="inboxTransactionsFailed2">
+    UPDATE t_outbox SET status=#{next},attempts=#{attempts},lease_token=NULL,available_at=DATE_ADD(UTC_TIMESTAMP(3),INTERVAL #{delay} SECOND),last_error=#{value3} WHERE id=#{id} AND lease_token=#{token} AND status IN ('LEASED','SENT')
+  </update>
+  <update id="outboxDispatcherDispatch">
+    UPDATE t_outbox SET status='PENDING',lease_token=NULL WHERE (status='LEASED' AND lease_until&lt;UTC_TIMESTAMP(3)) OR (status='SENT' AND updated_at&lt;DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 60 SECOND))
+  </update>
+  <select id="outboxDispatcherDispatch2" resultType="cn.shiguang.notes.entity.OutboxEntity">
+    SELECT * FROM t_outbox WHERE status='PENDING' AND available_at&lt;=UTC_TIMESTAMP(3) ORDER BY id LIMIT 50 FOR UPDATE SKIP LOCKED
+  </select>
+  <update id="outboxDispatcherDispatch3">
+    UPDATE t_outbox SET status='LEASED',lease_token=#{token},lease_until=DATE_ADD(UTC_TIMESTAMP(3),INTERVAL 30 SECOND),publish_attempts=publish_attempts+1 WHERE id=#{id} AND status='PENDING'
+  </update>
+  <update id="outboxDispatcherDispatch4">
+    UPDATE t_outbox SET status='SENT' WHERE id=#{id} AND status='LEASED' AND lease_token=#{token}
+  </update>
+  <update id="outboxDispatcherDispatch5">
+    UPDATE t_outbox SET status='PENDING',lease_token=NULL,available_at=DATE_ADD(UTC_TIMESTAMP(3),INTERVAL 5 SECOND),last_error=#{value0} WHERE id=#{id} AND status='LEASED' AND lease_token=#{token}
+  </update>
+</mapper>

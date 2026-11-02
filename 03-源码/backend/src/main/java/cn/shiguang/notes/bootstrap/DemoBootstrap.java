@@ -1,7 +1,9 @@
 package cn.shiguang.notes.bootstrap;
 
 import cn.shiguang.notes.common.util.Data;
-import cn.shiguang.notes.repository.support.Database;
+import cn.shiguang.notes.entity.*;
+import cn.shiguang.notes.mapper.*;
+import cn.shiguang.notes.repository.support.MapperRows;
 import cn.shiguang.notes.service.IdentityService;
 import java.util.*;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,17 +18,23 @@ public class DemoBootstrap implements ApplicationRunner {
   private final boolean enabled;
   private final String password;
   private final IdentityService identity;
-  private final Database db;
+  private final TopicMapper topicMapper;
+  private final UserMapper userMapper;
+  private final UserRoleMapper userRoleMapper;
 
   public DemoBootstrap(
       @Value("${app.seed-demo:false}") boolean enabled,
       @Value("${app.demo-password:${DEMO_PASSWORD:}}") String password,
       IdentityService identity,
-      Database db) {
+      TopicMapper topicMapper,
+      UserMapper userMapper,
+      UserRoleMapper userRoleMapper) {
     this.enabled = enabled;
     this.password = password;
     this.identity = identity;
-    this.db = db;
+    this.topicMapper = topicMapper;
+    this.userMapper = userMapper;
+    this.userRoleMapper = userRoleMapper;
   }
 
   @Override
@@ -41,7 +49,7 @@ public class DemoBootstrap implements ApplicationRunner {
       {"demo_admin", "系统管理员", "ADMIN"}
     };
     for (String[] a : accounts) {
-      var existing = db.optional("SELECT id FROM t_user WHERE username=?", a[0]);
+      var existing = MapperRows.optional(userMapper.demoBootstrapRun(a[0]));
       if (existing == null) {
         long id =
             Long.parseLong(
@@ -49,11 +57,7 @@ public class DemoBootstrap implements ApplicationRunner {
                     .register(Data.map("username", a[0], "password", password, "nickname", a[1]))
                     .get("id")
                     .toString());
-        if (!a[2].equals("USER"))
-          db.update(
-              "INSERT INTO t_user_role(user_id,role_id) SELECT ?,id FROM t_role WHERE code=?",
-              id,
-              a[2]);
+        if (!a[2].equals("USER")) userRoleMapper.demoBootstrapRun(id, a[2]);
       }
     }
     for (String[] t :
@@ -66,8 +70,6 @@ public class DemoBootstrap implements ApplicationRunner {
           {"户外徒步", "户外"},
           {"日常穿搭", "穿搭"},
           {"周末食谱", "美食"}
-        })
-      db.update(
-          "INSERT IGNORE INTO t_topic(name,category,status) VALUES(?,?,'ACTIVE')", t[0], t[1]);
+        }) topicMapper.demoBootstrapRun(t[0], t[1]);
   }
 }

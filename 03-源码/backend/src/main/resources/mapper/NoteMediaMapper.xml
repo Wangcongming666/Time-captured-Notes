@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.shiguang.notes.mapper.NoteMediaMapper">
+  <select id="contentMediaIds" resultType="java.util.LinkedHashMap">
+    SELECT media_id FROM t_note_media WHERE note_id=#{id} ORDER BY position
+  </select>
+  <select id="contentMediaEntries" resultType="java.util.LinkedHashMap">
+    SELECT m.id,m.media_type,m.mime,m.width,m.height,m.duration_ms FROM t_note_media nm JOIN t_media m ON m.id=nm.media_id WHERE nm.note_id=#{id} ORDER BY nm.position
+  </select>
+  <select id="publicQueryMediaAllowed" resultType="java.lang.Long">
+    SELECT COUNT(*) FROM t_note_media nm JOIN t_note n ON n.id=nm.note_id WHERE nm.media_id=#{id} AND n.status='PUBLISHED'
+  </select>
+  <select id="bindingMedia" resultType="java.util.LinkedHashMap">
+    SELECT media_id FROM t_note_media WHERE note_id=#{target}
+  </select>
+  <delete id="deleteBindings">DELETE FROM t_note_media WHERE note_id=#{target}</delete>
+  <insert id="insertBinding">INSERT INTO t_note_media(note_id,media_id,position) VALUES(#{target},#{mediaId},#{position})</insert>
+</mapper>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.shiguang.notes.mapper.MediaMapper">
+  <select id="contentMedia" resultType="cn.shiguang.notes.entity.MediaEntity">
+    SELECT * FROM t_media WHERE id=#{id}<if test="lock"> FOR UPDATE</if>
+  </select>
+  <update id="contentAvatar">
+    UPDATE t_media SET status='STAGED' WHERE id=#{previous}
+  </update>
+  <update id="contentAvatar2">
+    UPDATE t_media SET status='BOUND' WHERE id=#{next}
+  </update>
+  <update id="contentBind">
+    UPDATE t_media SET status='STAGED' WHERE id=#{id}
+  </update>
+  <update id="contentBind2">
+    UPDATE t_media SET status='BOUND' WHERE id=#{value0}
+  </update>
+  <select id="mediaMaintenanceCleanup" resultType="java.util.LinkedHashMap">
+    SELECT m.id,m.storage_key,m.poster_storage_key FROM t_media m WHERE m.status IN ('STAGED','DELETED') AND m.created_at&lt;DATE_SUB(UTC_TIMESTAMP(),INTERVAL 24 HOUR) AND NOT EXISTS(SELECT 1 FROM t_note_media n WHERE n.media_id=m.id) AND NOT EXISTS(SELECT 1 FROM t_practice_media p WHERE p.media_id=m.id) AND NOT EXISTS(SELECT 1 FROM t_user u WHERE u.avatar_media_id=m.id) ORDER BY m.id LIMIT 100 FOR UPDATE SKIP LOCKED
+  </select>
+  <update id="mediaMaintenanceCleanup2">
+    UPDATE t_media SET status='DELETED' WHERE id=#{id}
+  </update>
+  <delete id="mediaMaintenanceCleanup3">
+    DELETE FROM t_media WHERE id=#{id} AND status='DELETED'
+  </delete>
+</mapper>

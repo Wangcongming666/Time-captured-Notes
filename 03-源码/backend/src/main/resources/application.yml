@@ -44,7 +44,9 @@ spring:
   jackson:
     time-zone: UTC
 mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
   configuration:
+    call-setters-on-nulls: true
     map-underscore-to-camel-case: true
 management:
   server:

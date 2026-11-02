@@ -2,7 +2,9 @@ package cn.shiguang.notes.schedule;
 
 import cn.shiguang.notes.common.contract.MediaStore;
 import cn.shiguang.notes.common.util.Data;
-import cn.shiguang.notes.repository.support.Database;
+import cn.shiguang.notes.entity.*;
+import cn.shiguang.notes.mapper.*;
+import cn.shiguang.notes.repository.support.MapperRows;
 import java.util.*;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -13,12 +15,12 @@ import org.springframework.transaction.support.TransactionTemplate;
  */
 @Component
 public class MediaMaintenance {
-  private final Database db;
+  private final MediaMapper mediaMapper;
   private final TransactionTemplate tx;
   private final MediaStore store;
 
-  public MediaMaintenance(Database db, TransactionTemplate tx, MediaStore store) {
-    this.db = db;
+  public MediaMaintenance(MediaMapper mediaMapper, TransactionTemplate tx, MediaStore store) {
+    this.mediaMapper = mediaMapper;
     this.tx = tx;
     this.store = store;
   }
@@ -28,17 +30,8 @@ public class MediaMaintenance {
     var candidates =
         tx.execute(
             s -> {
-              var rows =
-                  db.query(
-                      "SELECT m.id,m.storage_key,m.poster_storage_key FROM t_media m WHERE m.status"
-                          + " IN ('STAGED','DELETED') AND"
-                          + " m.created_at<DATE_SUB(UTC_TIMESTAMP(),INTERVAL 24 HOUR) AND NOT"
-                          + " EXISTS(SELECT 1 FROM t_note_media n WHERE n.media_id=m.id) AND NOT"
-                          + " EXISTS(SELECT 1 FROM t_practice_media p WHERE p.media_id=m.id) AND"
-                          + " NOT EXISTS(SELECT 1 FROM t_user u WHERE u.avatar_media_id=m.id) ORDER"
-                          + " BY m.id LIMIT 100 FOR UPDATE SKIP LOCKED");
-              for (var row : rows)
-                db.update("UPDATE t_media SET status='DELETED' WHERE id=?", Data.id(row, "id"));
+              var rows = MapperRows.list(mediaMapper.mediaMaintenanceCleanup());
+              for (var row : rows) mediaMapper.mediaMaintenanceCleanup2(Data.id(row, "id"));
               return rows;
             });
     if (candidates == null) return;
@@ -47,10 +40,7 @@ public class MediaMaintenance {
         store.delete(Data.text(row, "storageKey"));
         if (!Data.text(row, "posterStorageKey").isEmpty())
           store.delete(Data.text(row, "posterStorageKey"));
-        tx.execute(
-            s ->
-                db.update(
-                    "DELETE FROM t_media WHERE id=? AND status='DELETED'", Data.id(row, "id")));
+        tx.execute(s -> mediaMapper.mediaMaintenanceCleanup3(Data.id(row, "id")));
       } catch (Exception e) {
         org.slf4j.LoggerFactory.getLogger(MediaMaintenance.class)
             .warn(

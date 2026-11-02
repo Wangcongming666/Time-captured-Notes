@@ -19,7 +19,14 @@ public class GlobalExceptionHandler {
     return response(e.status(), e.code(), e.getMessage());
   }
 
-  @ExceptionHandler({IllegalArgumentException.class, HttpMessageNotReadableException.class})
+  @ExceptionHandler({
+    IllegalArgumentException.class,
+    HttpMessageNotReadableException.class,
+    org.springframework.web.bind.MethodArgumentNotValidException.class,
+    org.springframework.validation.BindException.class,
+    jakarta.validation.ConstraintViolationException.class,
+    org.springframework.web.method.annotation.HandlerMethodValidationException.class
+  })
   public ResponseEntity<ApiResponse<Void>> invalid(Exception e) {
     return response(400, "INVALID_INPUT", "请求格式或参数无效");
   }

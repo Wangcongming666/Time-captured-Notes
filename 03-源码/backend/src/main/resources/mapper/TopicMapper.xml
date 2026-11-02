@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.shiguang.notes.mapper.TopicMapper">
+  <insert id="demoBootstrapRun">
+    INSERT IGNORE INTO t_topic(name,category,status) VALUES(#{value0},#{value1},'ACTIVE')
+  </insert>
+  <select id="demoContentRun" resultType="java.util.LinkedHashMap">
+    SELECT id FROM t_topic ORDER BY id LIMIT 8
+  </select>
+  <select id="contentActiveTopics" resultType="java.lang.Long">
+    SELECT COUNT(*) FROM t_topic WHERE id=#{id} AND status='ACTIVE'
+  </select>
+  <select id="discoveryInterest" resultType="java.lang.Long">
+    SELECT COUNT(*) FROM t_topic WHERE id=#{topic} AND status='ACTIVE'
+  </select>
+  <select id="governanceTopics" resultType="java.util.LinkedHashMap">
+    SELECT id,name,category,status FROM t_topic WHERE status='ACTIVE' AND id&lt;#{before} ORDER BY id DESC LIMIT #{size}
+  </select>
+  <select id="governanceAllTopics" resultType="java.util.LinkedHashMap">
+    SELECT id,name,category,status FROM t_topic WHERE id&lt;#{before} ORDER BY id DESC LIMIT #{size}
+  </select>
+  <update id="governanceUpdateTopic">
+    UPDATE t_topic SET name=#{name},category=#{category},status=#{status} WHERE id=#{id}
+  </update>
+  <select id="governanceUpdateTopic2" resultType="java.util.LinkedHashMap">
+    SELECT id,name,category,status FROM t_topic WHERE id=#{id}
+  </select>
+  <select id="statisticsHotTopics" resultType="java.util.LinkedHashMap">
+    SELECT t.id AS subject_id,t.name AS label,'LIKE' AS metric,COALESCE(SUM(m.like_count),0) AS value,COUNT(*) AS note_count FROM t_topic t JOIN t_note_topic nt ON nt.topic_id=t.id JOIN t_note n ON n.id=nt.note_id LEFT JOIN t_note_metric m ON m.note_id=n.id WHERE n.status='PUBLISHED' AND n.published_at&gt;=DATE_SUB(UTC_TIMESTAMP(),INTERVAL #{days} DAY) GROUP BY t.id,t.name ORDER BY value DESC,note_count DESC,t.id DESC LIMIT 10
+  </select>
+</mapper>

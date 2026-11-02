@@ -2,7 +2,11 @@ package cn.shiguang.notes.service;
 
 import cn.shiguang.notes.common.contract.EventPort;
 import cn.shiguang.notes.common.util.Data;
+import cn.shiguang.notes.converter.HttpBoundaryConverter;
 import cn.shiguang.notes.dto.Actor;
+import cn.shiguang.notes.dto.request.*;
+import cn.shiguang.notes.service.application.LoginSession;
+import cn.shiguang.notes.vo.*;
 import java.util.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AccountService {
   private final IdentityService api;
+  private final HttpBoundaryConverter views;
   private final ContentService content;
   private final GovernanceService governance;
   private final EventPort events;
@@ -19,12 +24,14 @@ public class AccountService {
 
   public AccountService(
       IdentityService api,
+      HttpBoundaryConverter views,
       ContentService content,
       GovernanceService governance,
       EventPort events,
       cn.shiguang.notes.repository.query.PublicQueryRepository reads,
       cn.shiguang.notes.service.StatisticsService statistics) {
     this.api = api;
+    this.views = views;
     this.content = content;
     this.governance = governance;
     this.events = events;
@@ -38,17 +45,15 @@ public class AccountService {
   }
 
   @Transactional
-  public Map<String, Object> register(Map<String, Object> input) {
-    return api.register(input);
+  public IdVO register(RegisterRequest request) {
+    return views.view(api.register(views.input(request)), IdVO.class);
   }
 
   @Transactional
-  public Map<String, Object> login(String name, String pass) {
-    long id = api.verify(name, pass);
+  public LoginSession login(LoginRequest request) {
+    long id = api.verify(request.username(), request.password());
     String token = api.session(id);
-    var result = new LinkedHashMap<>(api.profile(id, true));
-    result.put("sessionToken", token);
-    return result;
+    return new LoginSession(views.view(api.profile(id, true), UserVO.class), token);
   }
 
   @Transactional
@@ -69,32 +74,34 @@ public class AccountService {
     return api.checkCsrf(token, csrf);
   }
 
-  public Map<String, Object> profile(Actor actor) {
+  public UserVO profile(Actor actor) {
     actor.requireLogin();
-    return api.profile(actor.id(), true);
+    return views.view(api.profile(actor.id(), true), UserVO.class);
   }
 
-  public Map<String, Object> publicProfile(long id) {
-    return api.profile(id, false);
+  public UserVO publicProfile(long id) {
+    return views.view(api.profile(id, false), UserVO.class);
   }
 
-  public Map<String, Object> summary(Actor viewer, long id) {
+  public ProfileSummaryVO summary(Actor viewer, long id) {
     api.profile(id, false);
-    return reads.profileSummary(id, viewer.id());
+    return views.view(reads.profileSummary(id, viewer.id()), ProfileSummaryVO.class);
   }
 
   @Transactional
-  public Map<String, Object> update(Actor actor, Map<String, Object> input) {
+  public UserVO update(Actor actor, ProfileRequest request) {
+    var input = views.input(request);
     actor.requireLogin();
     var previous = api.profile(actor.id(), true);
     Long next = input.get("avatarMediaId") == null ? null : Data.id(input, "avatarMediaId");
     Long old = previous.get("avatarMediaId") == null ? null : Data.id(previous, "avatarMediaId");
     content.avatar(actor, next, old);
-    return api.updateProfile(actor, input);
+    return views.view(api.updateProfile(actor, input), UserVO.class);
   }
 
   @Transactional
-  public void status(Actor actor, long target, Map<String, Object> input) {
+  public void status(Actor actor, long target, AccountStatusRequest request) {
+    var input = views.input(request);
     actor.require("ADMIN");
     var before = api.profile(target, true);
     api.status(actor, target, input);
@@ -117,7 +124,8 @@ public class AccountService {
   }
 
   @Transactional
-  public void roles(Actor actor, long target, Map<String, Object> input) {
+  public void roles(Actor actor, long target, RolesRequest request) {
+    var input = views.input(request);
     actor.require("ADMIN");
     var before = api.profile(target, true);
     api.roles(actor, target, input);

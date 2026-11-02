@@ -28,6 +28,8 @@ jobs:
         run: docker build -t shiguang-minio-test:2025-10-15 -f 03-源码/backend/src/test/resources/minio/Dockerfile 03-源码/backend/src/test/resources/minio
       - name: Install real video processor
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Initialize development configuration
+        run: python 03-源码/scripts/init-env.py
       - name: Java domain architecture and real container tests
         run: mvn -B -ntp -f 03-源码/backend/pom.xml verify
       - name: Frontend tests and type-checked build
@@ -39,7 +41,6 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Start full local stack
         run: |
-          python 03-源码/scripts/init-env.py
           docker compose --env-file 03-源码/.env -f 03-源码/docker-compose.yml up -d --build --wait --wait-timeout 240
       - name: Desktop and mobile browser tests
         working-directory: 03-源码/frontend

@@ -9,6 +9,7 @@
 .runtime/
 .env
 .env.*
+**/application-dev.yml
 !.env.example
 **/secrets/
 **/uploads/

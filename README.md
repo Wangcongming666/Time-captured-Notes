@@ -76,7 +76,9 @@ docker compose up -d --build --wait --wait-timeout 240
 
 打开 [http://localhost:8080](http://localhost:8080)。数据库由 Flyway 自动初始化，无需手工执行 SQL。
 
-如果本机已有 `.env`，直接启动 Compose，保留原文件。初始化脚本拒绝覆盖已有配置，避免随机密码变化导致已有数据库无法连接。首次镜像下载时间取决于网络。
+开发环境配置集中在 `03-源码/backend/src/main/resources/application-dev.yml`，包含 MySQL、Redis、RabbitMQ、媒体、MinIO、上传限制及演示账号配置，默认启用 `dev`。初始化脚本从已有 `.env` 生成此文件；重复运行保留已有凭据及手动修改。该文件含真实本地密码，不上传 GitHub。`application.yml` 只放公共配置，生产配置使用 `application-prod.yml`。
+
+`.env` 供 Docker 创建数据库和消息服务时使用。已有 `.env` 也可以执行初始化命令，只补齐缺失的开发配置，不更换数据库密码。开发配置不打包进 JAR 或镜像，Compose 以只读文件挂载到容器，IDE 直接加载资源目录中的配置。首次镜像下载时间取决于网络。
 
 ### 演示账号
 
@@ -101,7 +103,7 @@ docker compose stop
 docker compose up -d --wait
 ```
 
-默认仅发布 `127.0.0.1:8080`。MySQL、Redis、RabbitMQ和后端管理端口通过 Docker 网络访问。数据库、消息及媒体使用具名卷持久化；`docker compose down` 保留数据卷，`down -v` 会清空数据卷。
+网页发布在 `127.0.0.1:8080`；开发连接端口绑定本机：MySQL `3306`、Redis `6379`、RabbitMQ `5672`、RabbitMQ 管理界面 `15672`。IDE 启动后端前，先停止 Compose 中的 `app`、`web`，保留三个中间件运行，避免占用同一个 `8080`。前端在 `frontend` 目录执行 `npm run dev`。数据库、消息及媒体使用具名卷持久化；`docker compose down` 保留数据卷，`down -v` 会清空数据卷。
 
 ## 图片与视频存储：测试本地，上线 MinIO
 

@@ -2,6 +2,7 @@ name: shiguang
 services:
   mysql:
     image: mysql:8.4.13
+    profiles: [full-stack]
     environment:
       MYSQL_DATABASE: shiguang
       MYSQL_USER: shiguang
@@ -9,7 +10,7 @@ services:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?configure .env}
       TZ: UTC
     volumes: [mysql_data:/var/lib/mysql]
-    ports: ["127.0.0.1:3306:3306"]
+    ports: ["127.0.0.1:${MYSQL_HOST_PORT:-13306}:3306"]
     networks: [back]
     healthcheck:
       test: [CMD-SHELL, 'MYSQL_PWD="$${MYSQL_ROOT_PASSWORD}" mysqladmin ping -h localhost --silent']
@@ -21,7 +22,7 @@ services:
     image: redis:8.2.11
     ports: ["127.0.0.1:6379:6379"]
     command: [redis-server, --maxmemory, 256mb, --maxmemory-policy, allkeys-lfu, --save, "", --appendonly, "no"]
-    networks: [back]
+    networks: [edge, back]
     healthcheck:
       test: [CMD, redis-cli, ping]
       interval: 5s
@@ -34,7 +35,7 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBIT_PASSWORD:?configure .env}
       RABBITMQ_DEFAULT_VHOST: shiguang
     volumes: [rabbit_data:/var/lib/rabbitmq]
-    networks: [back]
+    networks: [edge, back]
     healthcheck:
       test: [CMD, rabbitmq-diagnostics, -q, ping]
       interval: 5s
@@ -42,8 +43,10 @@ services:
       retries: 30
   app:
     build: ./backend
+    profiles: [full-stack]
     environment:
       DB_URL: jdbc:mysql://mysql:3306/shiguang?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true
+      DB_USER: shiguang
       DB_PASSWORD: ${DB_PASSWORD}
       REDIS_HOST: redis
       RABBIT_HOST: rabbitmq
@@ -75,6 +78,7 @@ services:
       retries: 12
   web:
     build: ./frontend
+    profiles: [full-stack]
     environment:
       NGINX_CLIENT_MAX_BODY_SIZE: ${NGINX_CLIENT_MAX_BODY_SIZE:-101m}
     ports: ["127.0.0.1:8080:80"]

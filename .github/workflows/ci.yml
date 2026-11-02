@@ -41,7 +41,7 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Start full local stack
         run: |
-          docker compose --env-file 03-源码/.env -f 03-源码/docker-compose.yml up -d --build --wait --wait-timeout 240
+          docker compose --profile full-stack --env-file 03-源码/.env -f 03-源码/docker-compose.yml up -d --build --wait --wait-timeout 240
       - name: Desktop and mobile browser tests
         working-directory: 03-源码/frontend
         run: |
@@ -61,5 +61,5 @@ jobs:
         if: always()
         run: |
           if [ -f 03-源码/.env ]; then
-            docker compose --env-file 03-源码/.env -f 03-源码/docker-compose.yml down
+            docker compose --profile full-stack --env-file 03-源码/.env -f 03-源码/docker-compose.yml down
           fi

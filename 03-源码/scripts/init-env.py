@@ -44,8 +44,8 @@ management:
 spring:
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/shiguang?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true}
-    username: ${DB_USER:shiguang}
-    password: @@DB_PASSWORD@@
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:root}
     hikari:
       maximum-pool-size: 16
       minimum-idle: 4
@@ -87,7 +87,7 @@ app:
   seed-demo: ${SEED_DEMO:true}
   demo-password: @@DEMO_PASSWORD@@
 '''
-    for key in ['DB_PASSWORD', 'REDIS_PASSWORD', 'RABBIT_PASSWORD', 'CURSOR_HMAC_KEY',
+    for key in ['REDIS_PASSWORD', 'RABBIT_PASSWORD', 'CURSOR_HMAC_KEY',
                 'DEMO_PASSWORD', 'MINIO_ENDPOINT', 'MINIO_ACCESS_KEY', 'MINIO_SECRET_KEY']:
         template = template.replace('@@' + key + '@@', setting(key))
     template = template.replace('@@MINIO_BUCKET@@', setting('MINIO_BUCKET', 'shiguang-media'))

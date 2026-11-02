@@ -65,16 +65,18 @@ cn.shiguang.notes/
 
 ## 快速启动
 
-需要 Git、Python 3、Docker Desktop（或 Docker Engine 与 Compose 插件）。先启动 Docker，建议分配至少 6GB 内存并预留 10GB 以上磁盘；首次构建需要下载镜像、Maven 和 npm 依赖。
+本地开发使用已安装的 MySQL（`127.0.0.1:3306`、数据库 `shiguang`，本地账号密码默认 `root / root`）、Java 21、Maven、Node.js，以及 Docker 中的 Redis、RabbitMQ。MySQL 中需先创建空库 `shiguang`，表结构由后端首次启动时通过 Flyway 初始化。
 
 ```powershell
 git clone https://github.com/Wangcongming666/Time-captured-Notes.git
 cd Time-captured-Notes/03-源码
 python scripts/init-env.py
-docker compose up -d --build --wait --wait-timeout 240
+docker compose up -d redis rabbitmq
 ```
 
-打开 [http://localhost:8080](http://localhost:8080)。数据库由 Flyway 自动初始化，无需手工执行 SQL。
+在 IDE 启动 `NotesApplication`，默认启用 `dev`；前端在 `frontend` 目录执行 `npm ci`、`npm run dev`，打开 [http://localhost:5173](http://localhost:5173)。
+
+默认 Compose 只启动 Redis、RabbitMQ，不启动数据库和前后端。需要完整容器环境时，可执行 `docker compose --profile full-stack up -d --build --wait --wait-timeout 240`：该模式使用独立 Docker 数据库（宿主机端口 `13306`，容器账号为 `.env` 对应的 `shiguang`），网页地址为 [http://localhost:8080](http://localhost:8080)。避免同时运行 IDE 后端和容器后端。
 
 开发环境配置集中在 `03-源码/backend/src/main/resources/application-dev.yml`，包含 MySQL、Redis、RabbitMQ、媒体、MinIO、上传限制及演示账号配置，默认启用 `dev`。初始化脚本从已有 `.env` 生成此文件；重复运行保留已有凭据及手动修改。该文件含真实本地密码，不上传 GitHub。`application.yml` 只放公共配置，生产配置使用 `application-prod.yml`。
 
@@ -103,7 +105,7 @@ docker compose stop
 docker compose up -d --wait
 ```
 
-网页发布在 `127.0.0.1:8080`；开发连接端口绑定本机：MySQL `3306`、Redis `6379`、RabbitMQ `5672`、RabbitMQ 管理界面 `15672`。IDE 启动后端前，先停止 Compose 中的 `app`、`web`，保留三个中间件运行，避免占用同一个 `8080`。前端在 `frontend` 目录执行 `npm run dev`。数据库、消息及媒体使用具名卷持久化；`docker compose down` 保留数据卷，`down -v` 会清空数据卷。
+开发连接端口：本地 MySQL `3306`、Docker Redis `6379`、RabbitMQ `5672`、RabbitMQ 管理界面 `15672`，Docker 端口仅绑定本机。可选全容器模式的数据库、消息及媒体使用具名卷持久化；`docker compose --profile full-stack down` 保留数据卷，`down -v` 会清空数据卷。本地数据库与 Docker 数据库各自独立，配置切换不会自动迁移数据。
 
 ## 图片与视频存储：测试本地，上线 MinIO
 
@@ -123,7 +125,7 @@ MINIO_BUCKET=shiguang-media
 在 `03-源码` 目录启动 MinIO 存储模式：
 
 ```powershell
-docker compose -f docker-compose.yml -f docker-compose.minio.yml up -d --build --wait --wait-timeout 240
+docker compose --profile full-stack -f docker-compose.yml -f docker-compose.minio.yml up -d --build --wait --wait-timeout 240
 ```
 
 覆盖配置启用 `prod` 并关闭演示数据；桶须提前创建，默认不允许应用自动建桶。该文件连接现有 MinIO，不负责创建线上 MinIO 服务器或配置公网 HTTPS。

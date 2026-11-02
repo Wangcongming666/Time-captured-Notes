@@ -19,6 +19,9 @@ export interface Topic {
   status: string;
 }
 export interface Card {
+  coverMediaType?: "IMAGE" | "VIDEO";
+  durationMs?: number | null;
+  authorAvatarMediaId?: string | null;
   id: string;
   authorId: string;
   authorName: string;
@@ -30,6 +33,7 @@ export interface Card {
   favoriteCount: number;
 }
 export interface Note {
+  mediaEntries?: MediaEntry[];
   id: string;
   authorId: string;
   title: string;
@@ -47,6 +51,14 @@ export interface Note {
   likeCount?: number;
   favoriteCount?: number;
   commentCount?: number;
+}
+export interface MediaEntry {
+  id: string;
+  mediaType: "IMAGE" | "VIDEO";
+  mime: string;
+  width: number;
+  height: number;
+  durationMs?: number | null;
 }
 export interface Version {
   id: string;

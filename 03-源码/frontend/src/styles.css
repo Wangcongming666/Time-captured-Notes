@@ -1,9 +1,9 @@
 :root {
-  font-family: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
   color: #202020;
   background: #fff;
   font-synthesis: none;
-  --accent: #e93448;
+  --accent: #ff2442;
   --muted: #767676;
   --line: #ededed;
   --soft: #f6f6f6;
@@ -72,22 +72,25 @@ p {
   min-height: 100vh;
 }
 .sidebar {
-  width: 224px;
+  width: 248px;
   position: fixed;
   inset: 0 auto 0 0;
   padding: 32px 20px 20px;
   background: #fff;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--line);
   z-index: 10;
 }
 .brand {
   font-weight: 850;
-  font-size: 28px;
+  font-size: 22px;
   letter-spacing: -0.035em;
   margin: 0 0 38px 12px;
-  color: var(--accent);
+  color: #fff;
+  background: var(--accent);
+  border-radius: 24px;
+  padding: 5px 12px;
+  width: fit-content;
 }
 .brand span {
   font-weight: 650;
@@ -102,7 +105,7 @@ p {
   gap: 15px;
   min-height: 50px;
   padding: 0 18px;
-  border-radius: var(--radius);
+  border-radius: 28px;
   font-size: 17px;
   color: #555;
 }
@@ -159,7 +162,7 @@ p {
   margin: 20px 0 0;
 }
 .main-shell {
-  margin-left: 224px;
+  margin-left: 248px;
 }
 .topbar {
   height: 92px;
@@ -558,14 +561,61 @@ p {
   display: flex;
   gap: 26px;
   align-items: center;
-  padding: 34px 0;
+  padding: 40px 24px 48px;
+  max-width: 900px;
+  margin: 0 auto 16px;
+}
+.profile-tabs {
+  justify-content: center;
+  border-bottom: 0;
+  flex-wrap: wrap;
+}
+.profile-tabs .active {
+  border: 0;
+  border-radius: 24px;
+  background: var(--soft);
+  padding: 9px 20px;
 }
 .profile-header h1 {
   margin: 0 0 10px;
 }
 .profile-header p {
-  margin: 0;
+  margin: 0 0 12px;
+  color: #555;
+}
+.profile-header .avatar.large {
+  width: 164px;
+  height: 164px;
+  font-size: 54px;
+  margin-right: 24px;
+  object-fit: cover;
+}
+.profile-header .profile-id {
+  font-size: 12px;
+  color: #888;
+}
+.profile-bio {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-width: 480px;
+}
+.profile-stats {
+  display: flex;
+  gap: 22px;
   color: #777;
+  font-size: 13px;
+  margin-top: 20px;
+}
+.profile-stats strong {
+  color: #222;
+  font-size: 16px;
+  font-weight: 550;
+}
+.follow-button {
+  border-color: var(--accent);
+  color: var(--accent);
+  margin-left: auto;
+  min-width: 96px;
 }
 .editor {
   max-width: 920px;
@@ -648,7 +698,7 @@ p {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
   max-width: 1150px;
-  margin: 25px auto;
+  margin: 12px auto 30px;
   border: 1px solid var(--line);
   border-radius: 18px;
   overflow: hidden;
@@ -659,7 +709,7 @@ p {
   align-items: center;
   justify-content: center;
   position: relative;
-  min-height: 540px;
+  min-height: 600px;
 }
 .note-gallery > img {
   width: 100%;
@@ -680,7 +730,7 @@ p {
   font-size: 12px;
 }
 .note-panel {
-  padding: 26px;
+  padding: 0;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -910,6 +960,12 @@ p {
   overflow: auto;
   margin: 18px 0;
 }
+.review-video {
+  width: 100%;
+  max-height: 420px;
+  background: #111;
+  margin: 18px 0;
+}
 .review-images img {
   max-height: 260px;
   max-width: 250px;
@@ -970,6 +1026,142 @@ p {
   align-items: center;
   flex-wrap: wrap;
 }
+.video-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  background: #0006;
+  color: white;
+  font-size: 11px;
+}
+.avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+img.avatar {
+  object-fit: cover;
+}
+.publish-modes {
+  display: flex;
+  gap: 28px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 20px;
+}
+.publish-modes button {
+  border: 0;
+  background: none;
+  padding: 14px 4px;
+  font-size: 17px;
+  border-bottom: 2px solid transparent;
+}
+.publish-modes .active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: 650;
+}
+.video-tile {
+  aspect-ratio: auto;
+  min-height: 220px;
+  background: #fafafa;
+}
+.upload-tile:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.upload-plus {
+  font-size: 30px;
+  color: #aaa;
+}
+.video-preview {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+}
+.video-preview video {
+  width: 100%;
+  max-height: 400px;
+  background: #111;
+  border-radius: 8px;
+}
+.upload-progress {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 16px 0;
+  font-size: 13px;
+  color: #777;
+}
+.upload-progress progress {
+  accent-color: var(--accent);
+}
+.note-gallery.video-gallery {
+  background: #111;
+}
+.note-gallery > video {
+  width: 100%;
+  height: 100%;
+  max-height: 780px;
+  object-fit: contain;
+}
+.note-scroll {
+  padding: 24px;
+}
+.note-interactions {
+  padding: 12px 24px;
+  border-top: 1px solid var(--line);
+  background: #fff;
+}
+.note-interactions .comment-composer {
+  margin: 0 0 8px;
+}
+.note-interactions .note-toolbar {
+  border: 0;
+  padding: 8px 0 0;
+  margin: 0;
+}
+.detail-back {
+  margin-top: 12px;
+}
+@media (min-width: 1000px) {
+  .note-detail {
+    height: min(800px, calc(100dvh - 160px));
+    min-height: 560px;
+  }
+  .note-gallery {
+    min-height: 0;
+  }
+  .note-gallery > img,
+  .note-gallery > video {
+    max-height: 100%;
+    height: 100%;
+  }
+  .note-panel {
+    overflow: hidden;
+  }
+  .note-scroll {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    flex: 1;
+    min-height: 0;
+  }
+  .note-author {
+    position: sticky;
+    top: -26px;
+    padding-block: 18px;
+    background: white;
+    z-index: 2;
+  }
+}
 @media (min-width: 1500px) {
   .waterfall {
     columns: 5;
@@ -997,14 +1189,14 @@ p {
     gap: 18px;
   }
   .note-detail {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(290px, 0.9fr);
   }
   .note-gallery {
     min-height: 360px;
     max-height: 680px;
   }
   .note-panel {
-    padding: 26px;
+    padding: 0;
   }
   .practice-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -1121,6 +1313,7 @@ p {
     grid-template-columns: repeat(3, 1fr);
   }
   .note-detail {
+    grid-template-columns: 1fr;
     margin: 12px -16px;
     border: 0;
     border-radius: 0;
@@ -1130,7 +1323,7 @@ p {
     max-height: 560px;
   }
   .note-panel {
-    padding: 23px 18px;
+    padding: 0;
   }
   .note-panel h1 {
     font-size: 20px;
@@ -1186,9 +1379,33 @@ p {
   }
   .sticky-actions {
     bottom: 62px;
+    flex-wrap: wrap;
+  }
+  .sticky-actions .button {
+    flex: 1;
+    white-space: nowrap;
+  }
+  .sticky-actions .hint {
+    flex-basis: 100%;
   }
   .profile-header {
-    gap: 18px;
+    gap: 16px;
+    padding: 24px 0;
+    flex-wrap: wrap;
+  }
+  .profile-header .avatar.large {
+    width: 88px;
+    height: 88px;
+    margin-right: 0;
+    font-size: 30px;
+  }
+  .profile-header > div {
+    flex: 1;
+    min-width: 180px;
+  }
+  .profile-stats {
+    gap: 14px;
+    flex-wrap: wrap;
   }
   .profile-header h1 {
     font-size: 23px;

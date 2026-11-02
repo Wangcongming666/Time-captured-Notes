@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Card } from "../api/types";
-import { mediaUrl } from "../api/client";
+import { mediaUrl, posterUrl } from "../api/client";
 import AppIcon from "./AppIcon.vue";
 defineProps<{ note: Card }>();
 const labels: Record<string, string> = {
@@ -14,10 +14,23 @@ const labels: Record<string, string> = {
   <article class="note-card">
     <RouterLink :to="'/notes/' + note.id" class="card-picture"
       ><img
-        :src="mediaUrl(note.coverMediaId)"
+        :src="
+          note.coverMediaType === 'VIDEO'
+            ? posterUrl(note.coverMediaId)
+            : mediaUrl(note.coverMediaId)
+        "
         :alt="note.title"
         loading="lazy"
-      /><span class="card-reason">{{ labels[note.reason] }}</span></RouterLink
+      /><span
+        v-if="note.coverMediaType === 'VIDEO'"
+        class="video-badge"
+        aria-label="视频笔记"
+        >▶</span
+      ><span
+        v-if="note.reason !== 'LATEST' && labels[note.reason]"
+        class="card-reason"
+        >{{ labels[note.reason] }}</span
+      ></RouterLink
     >
     <div class="card-copy">
       <RouterLink :to="'/notes/' + note.id" class="card-title">{{
@@ -25,7 +38,13 @@ const labels: Record<string, string> = {
       }}</RouterLink>
       <div class="card-meta">
         <RouterLink :to="'/users/' + note.authorId" class="card-author"
-          ><span class="avatar tiny">{{
+          ><img
+            v-if="note.authorAvatarMediaId"
+            class="avatar tiny"
+            :src="mediaUrl(note.authorAvatarMediaId)"
+            alt=""
+            loading="lazy"
+          /><span v-else class="avatar tiny">{{
             note.authorName?.slice(0, 1) || "拾"
           }}</span
           >{{ note.authorName }}</RouterLink

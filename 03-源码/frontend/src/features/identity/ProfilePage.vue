@@ -30,6 +30,32 @@ const own = computed(() => route.path === "/me");
 const profile = ref<User | null>(null);
 const cards = notePage.items;
 const error = ref("");
+const summary = ref({
+  followingCount: 0,
+  followerCount: 0,
+  noteCount: 0,
+  appreciationCount: 0,
+  following: false,
+});
+async function toggleFollow() {
+  if (!session.user) {
+    location.assign("/login?next=" + encodeURIComponent(route.fullPath));
+    return;
+  }
+  if (!profile.value || busy.value) return;
+  busy.value = true;
+  try {
+    await api("/users/" + profile.value.id + "/follow", {
+      method: summary.value.following ? "DELETE" : "PUT",
+    });
+    summary.value = await api("/users/" + profile.value.id + "/summary");
+    await followerPage.load(true);
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : "关注失败";
+  } finally {
+    busy.value = false;
+  }
+}
 const busy = ref(false);
 const editing = ref(false);
 const bio = ref("");
@@ -43,6 +69,7 @@ async function load() {
     profile.value = await api<User>(
       own.value ? "/me" : "/users/" + route.params.id,
     );
+    summary.value = await api("/users/" + profile.value.id + "/summary");
     nickname.value = profile.value.nickname;
     bio.value = profile.value.bio;
     await Promise.all([
@@ -109,14 +136,32 @@ onMounted(load);
         }}</span>
         <div>
           <h1>{{ profile.nickname }}</h1>
-          <p>{{ profile.bio || "还没有简介，生活本身就是最好的介绍。" }}</p>
-          <p class="hint">
-            {{ following.length }} 位关注 ·
-            {{ followers.length }} 位粉丝（本页）
+          <p class="profile-id">拾光号：{{ profile.id }}</p>
+          <p class="profile-bio">
+            {{ profile.bio || "还没有简介，生活本身就是最好的介绍。" }}
           </p>
+          <div class="profile-stats">
+            <span
+              ><strong>{{ summary.followingCount }}</strong> 关注</span
+            >
+            <span
+              ><strong>{{ summary.followerCount }}</strong> 粉丝</span
+            >
+            <span
+              ><strong>{{ summary.appreciationCount }}</strong> 获赞与收藏</span
+            >
+          </div>
         </div>
         <button v-if="own" class="button" @click="editing = !editing">
           编辑资料
+        </button>
+        <button
+          v-if="!own && session.user?.id !== profile.id"
+          class="button follow-button"
+          :disabled="busy"
+          @click="toggleFollow"
+        >
+          {{ summary.following ? "已关注" : "关注" }}
         </button>
       </header>
       <form
@@ -137,9 +182,10 @@ onMounted(load);
             @change="avatar" /></label
         ><button class="button primary" :disabled="busy">保存资料</button>
       </form>
-      <nav class="tabs">
-        <span class="active">公开笔记</span
+      <nav class="tabs profile-tabs">
+        <span class="active">笔记 {{ summary.noteCount }}</span
         ><RouterLink v-if="own" to="/creator">我的草稿与发布状态</RouterLink
+        ><RouterLink v-if="own" to="/collections">收藏 · 仅自己可见</RouterLink
         ><RouterLink v-if="own" to="/preferences">兴趣设置</RouterLink>
       </nav>
       <div v-if="cards.length" class="waterfall">

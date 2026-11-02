@@ -31,8 +31,10 @@ const searching = computed(() => route.path === "/search");
 const mode = computed(() =>
   following.value ? "following" : session.user ? "recommend" : "discover",
 );
+let generation = 0;
 async function load(reset = false) {
-  if (loading.value) return;
+  if (loading.value && !reset) return;
+  const current = ++generation;
   if (following.value && !session.user) return;
   loading.value = true;
   error.value = "";
@@ -51,14 +53,16 @@ async function load(reset = false) {
           cursor: cursor.value,
         }),
     );
+    if (current !== generation) return;
     const seen = new Set(items.value.map((n) => n.id));
     items.value.push(...page.items.filter((n) => !seen.has(n.id)));
     cursor.value = page.nextCursor;
     more.value = page.hasMore;
   } catch (e) {
-    error.value = e instanceof Error ? e.message : "加载失败";
+    if (current === generation)
+      error.value = e instanceof Error ? e.message : "加载失败";
   } finally {
-    loading.value = false;
+    if (current === generation) loading.value = false;
   }
 }
 function choose(value: string) {
@@ -98,7 +102,7 @@ onMounted(() => {
       :aria-pressed="item === category"
       @click="choose(item)"
     >
-      {{ item }}</button
+      {{ item === "全部" ? "推荐" : item }}</button
     ><RouterLink v-if="session.user" to="/preferences" class="category"
       >调整兴趣</RouterLink
     >
@@ -111,14 +115,14 @@ onMounted(() => {
       {{
         following
           ? "关注作者后，他们发布的笔记会出现在这里。"
-          : "这里还没有公开笔记。发布图文，经审核通过后就能被大家发现。"
+          : "这里还没有公开笔记。发布图文或视频，经审核通过后就能被大家发现。"
       }}
     </p>
     <RouterLink class="button primary" :to="following ? '/' : '/editor'">{{
       following ? "去发现" : "发布笔记"
     }}</RouterLink>
   </div>
-  <section v-else class="waterfall" aria-label="图文笔记">
+  <section v-else class="waterfall" aria-label="生活笔记">
     <NoteCard v-for="note in items" :key="note.id" :note="note" />
   </section>
   <div v-if="loading" class="loading-state" role="status">

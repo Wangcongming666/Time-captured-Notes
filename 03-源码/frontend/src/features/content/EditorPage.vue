@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter, onBeforeRouteLeave } from "vue-router";
-import { api, mediaUrl } from "../../api/client";
+import { api, mediaUrl, posterUrl, uploadMedia } from "../../api/client";
 import type { Note, Topic, Page, Version } from "../../api/types";
 import { useSession } from "../../app/session";
 import RequireLogin from "../../components/RequireLogin.vue";
@@ -11,6 +11,21 @@ const router = useRouter();
 const session = useSession();
 const title = ref("");
 const body = ref("");
+const mediaKind = ref<"IMAGE" | "VIDEO">("IMAGE");
+const progress = ref(0);
+const uploading = ref(false);
+const limits = ref({ videoMaxBytes: 104857600, videoMaxSeconds: 300 });
+function chooseKind(kind: "IMAGE" | "VIDEO") {
+  if (kind === mediaKind.value || busy.value) return;
+  if (
+    mediaIds.value.length &&
+    !confirm("切换发布类型将移除当前素材，是否继续？")
+  )
+    return;
+  mediaIds.value = [];
+  mediaKind.value = kind;
+  dirty.value = true;
+}
 const mediaIds = ref<string[]>([]);
 const topicIds = ref<string[]>([]);
 const topics = ref<Topic[]>([]);
@@ -25,12 +40,14 @@ const dirty = ref(false);
 async function load() {
   if (!session.user) return;
   try {
+    limits.value = await api("/media/capabilities");
     topics.value = (await api<Page<Topic>>("/topics")).items;
     if (noteId.value) {
       const note = await api<Note>("/me/notes/" + noteId.value);
       title.value = note.title;
       body.value = note.body;
       mediaIds.value = note.mediaIds;
+      mediaKind.value = note.mediaEntries?.[0]?.mediaType ?? "IMAGE";
       topicIds.value = note.topicIds;
       version.value = note.version ?? 0;
       status.value = note.status ?? "DRAFT";
@@ -41,29 +58,36 @@ async function load() {
 }
 async function upload(event: Event) {
   const files = Array.from((event.target as HTMLInputElement).files ?? []);
-  if (mediaIds.value.length + files.length > 9) {
-    error.value = "最多选择9张图片";
+  const video = mediaKind.value === "VIDEO";
+  if (mediaIds.value.length + files.length > (video ? 1 : 9)) {
+    error.value = video ? "每篇上传一段视频" : "最多选择9张图片";
     return;
   }
   busy.value = true;
+  uploading.value = true;
+  progress.value = 0;
   error.value = "";
   try {
     for (const file of files) {
-      if (file.size > 10 * 1024 * 1024) throw new Error("单张图片不能超过10MB");
+      if (file.size > (video ? limits.value.videoMaxBytes : 10 * 1024 * 1024))
+        throw new Error(video ? "视频超过大小限制" : "单张图片不能超过10MB");
       const form = new FormData();
       form.append("file", file);
       form.append("purpose", "NOTE");
-      const result = await api<{ id: string }>("/media", {
-        method: "POST",
-        body: form,
-      });
+      const result = await uploadMedia<{ id: string }>(
+        video ? "/media/videos" : "/media",
+        form,
+        (value) => (progress.value = value),
+      );
       mediaIds.value.push(result.id);
+      dirty.value = true;
     }
     dirty.value = true;
   } catch (e) {
     error.value = e instanceof Error ? e.message : "上传失败";
   } finally {
     busy.value = false;
+    uploading.value = false;
     (event.target as HTMLInputElement).value = "";
   }
 }
@@ -131,31 +155,117 @@ onMounted(load);
       </p>
       <form class="form-stack" @submit.prevent="save(true)">
         <div>
-          <h2 class="small-heading">
-            图文图片 <span class="muted">{{ mediaIds.length }}/9</span>
-          </h2>
-          <div class="upload-grid">
-            <div v-for="(id, index) in mediaIds" :key="id" class="upload-thumb">
-              <img :src="mediaUrl(id)" :alt="'笔记图片' + (index + 1)" /><button
-                type="button"
-                :aria-label="'移除第' + (index + 1) + '张图片'"
-                @click="
-                  mediaIds.splice(index, 1);
-                  dirty = true;
-                "
+          <div class="publish-modes" role="group" aria-label="发布类型">
+            <button
+              type="button"
+              :class="{ active: mediaKind === 'IMAGE' }"
+              :aria-pressed="mediaKind === 'IMAGE'"
+              :disabled="busy"
+              @click="chooseKind('IMAGE')"
+            >
+              上传图文
+            </button>
+            <button
+              type="button"
+              :class="{ active: mediaKind === 'VIDEO' }"
+              :aria-pressed="mediaKind === 'VIDEO'"
+              :disabled="busy"
+              @click="chooseKind('VIDEO')"
+            >
+              上传视频
+            </button>
+          </div>
+          <p class="hint">
+            {{
+              mediaKind === "VIDEO"
+                ? `MP4（H.264 / AAC） · 最长 ${Math.floor(limits.videoMaxSeconds / 60)} 分钟 · 最大 ${Math.floor(limits.videoMaxBytes / 1048576)} MB · 自动生成封面`
+                : "1–9 张 JPG / PNG / WebP 图片，单张最大 10 MB"
+            }}
+          </p>
+          <div
+            v-if="mediaKind === 'VIDEO' && mediaIds[0]"
+            class="video-preview"
+          >
+            <video
+              :key="mediaIds[0]"
+              :src="mediaUrl(mediaIds[0])"
+              :poster="posterUrl(mediaIds[0])"
+              controls
+              playsinline
+              preload="metadata"
+            />
+            <button
+              class="button small"
+              type="button"
+              :disabled="busy"
+              @click="
+                mediaIds = [];
+                dirty = true;
+              "
+            >
+              移除视频
+            </button>
+          </div>
+          <div :class="mediaKind === 'IMAGE' ? 'upload-grid' : 'video-upload'">
+            <template v-if="mediaKind === 'IMAGE'">
+              <div
+                v-for="(id, index) in mediaIds"
+                :key="id"
+                class="upload-thumb"
               >
-                ×
-              </button>
-            </div>
-            <label v-if="mediaIds.length < 9" class="upload-tile"
-              ><span>＋ 添加图片</span><small>JPG / PNG / WebP</small
-              ><input
+                <img :src="mediaUrl(id)" :alt="'笔记图片' + (index + 1)" />
+                <button
+                  type="button"
+                  :aria-label="'移除第' + (index + 1) + '张图片'"
+                  :disabled="busy"
+                  @click="
+                    mediaIds.splice(index, 1);
+                    dirty = true;
+                  "
+                >
+                  ×
+                </button>
+              </div>
+            </template>
+            <label
+              v-if="mediaIds.length < (mediaKind === 'VIDEO' ? 1 : 9)"
+              class="upload-tile"
+              :class="{ 'video-tile': mediaKind === 'VIDEO' }"
+            >
+              <span class="upload-plus">＋</span
+              ><strong>{{
+                mediaKind === "VIDEO" ? "选择视频" : "添加图片"
+              }}</strong>
+              <small>{{
+                mediaKind === "VIDEO"
+                  ? "上传后可预览播放"
+                  : "记录生活的每一个角度"
+              }}</small>
+              <input
+                :key="mediaKind"
                 type="file"
-                multiple
-                accept="image/jpeg,image/png,image/webp"
+                :multiple="mediaKind === 'IMAGE'"
+                :accept="
+                  mediaKind === 'VIDEO'
+                    ? 'video/mp4'
+                    : 'image/jpeg,image/png,image/webp'
+                "
                 :disabled="busy"
                 @change="upload"
-            /></label>
+              />
+            </label>
+          </div>
+          <div v-if="uploading" class="upload-progress" role="status">
+            <progress
+              :value="progress"
+              max="100"
+              :aria-label="'上传进度 ' + progress + '%'"
+            />
+            <span>{{
+              progress < 100
+                ? `正在上传 ${progress}%`
+                : "上传完成，正在校验并生成预览…"
+            }}</span>
           </div>
         </div>
         <label class="field"
@@ -205,7 +315,7 @@ onMounted(load);
             :disabled="busy || status === 'PENDING'"
           >
             {{ busy ? "处理中…" : "提交审核" }}</button
-          ><span class="hint">图片和草稿默认仅本人可见</span>
+          ><span class="hint">素材和草稿默认仅本人可见</span>
         </footer>
       </form>
     </section></RequireLogin

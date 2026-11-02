@@ -282,7 +282,15 @@ onMounted(load);
             <p class="note-body">
               {{ preview.note?.body ?? preview.practice?.resultText }}
             </p>
-            <div class="review-images">
+            <video
+              v-if="preview.note?.mediaEntries?.[0]?.mediaType === 'VIDEO'"
+              :src="mediaUrl(preview.note.mediaIds[0]!)"
+              controls
+              playsinline
+              preload="metadata"
+              class="review-video"
+            />
+            <div v-else class="review-images">
               <img
                 v-for="id in preview.note?.mediaIds ??
                 preview.practice?.mediaIds ??

@@ -1,11 +1,11 @@
 # 拾光笔记 · Time-captured Notes
 
-小红书风格的图文社区，个人软件工程课程项目。前后端分离，采用模块化单体架构，支持图文发布、内容审核、互动通知，以及“收藏→实践→反馈”闭环。
+小红书风格的图文与视频社区，个人软件工程课程项目。前后端分离，采用模块化单体架构，支持图文和视频发布、内容审核、互动通知，以及“收藏→实践→反馈”闭环。
 
 ## 功能
 
 - 账号注册、登录、个人资料和头像；普通用户、审核员、管理员三类角色。
-- 图文草稿、图片上传、提交审核、发布状态管理及已发布内容编辑重审。
+- 用户自主选择图文（1–9张）或视频（单段MP4），草稿保存、上传预览、自动视频封面、提交审核、发布状态管理及已发布内容编辑重审。
 - 分类瀑布流、关键词搜索、关注流及展示推荐理由的兴趣推荐。
 - 点赞、二级评论、关注、私有收藏夹和跨夹收藏。
 - 实践计划、状态时间线、体验反馈；反馈默认私有，公开需单独审核。
@@ -19,7 +19,8 @@
 | 后端 | Java 21、Spring Boot、Spring Security、MyBatis-Plus |
 | 前端 | Vue 3、TypeScript、Vite、Pinia、Vue Router、ECharts |
 | 数据 | MySQL 8.4、Flyway、Redis |
-| 图片 | 本地文件（开发测试） / MinIO 私有桶（生产） |
+| 媒体 | 本地文件（开发测试） / MinIO 私有桶（生产） |
+| 视频 | FFmpeg / FFprobe，真实解码校验、封面生成、MP4快速起播与Range拖动播放 |
 | 消息 | RabbitMQ、事务 Outbox / Inbox |
 | 部署 | Docker Compose、Nginx |
 | 验证 | JUnit、ArchUnit、Testcontainers、Vitest、Playwright、GitHub Actions |
@@ -66,11 +67,11 @@ docker compose up -d --wait
 
 默认仅发布 `127.0.0.1:8080`。MySQL、Redis、RabbitMQ和后端管理端口通过 Docker 网络访问。数据库、消息及媒体使用具名卷持久化；`docker compose down` 保留数据卷，`down -v` 会清空数据卷。
 
-## 图片存储：测试本地，上线 MinIO
+## 图片与视频存储：测试本地，上线 MinIO
 
 默认 `local` 模式，上传文件保存在后端的 `MEDIA_ROOT`。使用 Compose 时对应容器 `/data/media` 和具名卷 `shiguang_media_data`，现有本地图片可以继续使用。
 
-生产环境启用 `prod` 配置会**强制使用 MinIO**；缺少凭据、桶不可访问或允许匿名访问时启动失败，不会回退写本地文件。图片仍通过后端 `/api/v1/media/{id}/content` 鉴权后流式读取，前端不保存 MinIO 密钥，也不使用可绕过实时权限的永久图片直链。
+生产环境启用 `prod` 配置会**强制使用 MinIO**；缺少凭据、桶不可访问或允许匿名访问时启动失败，不会回退写本地文件。图片和视频仍通过后端 `/api/v1/media/{id}/content` 鉴权后流式读取，前端不保存 MinIO 密钥，也不使用可绕过实时权限的永久图片直链。
 
 先在已有 MinIO 服务创建私有桶，为应用配置对应桶的检查、策略读取、对象读写和删除权限。将以下配置补入本机 `03-源码/.env`，填写自己的实际值：
 
@@ -89,13 +90,21 @@ docker compose -f docker-compose.yml -f docker-compose.minio.yml up -d --build -
 
 覆盖配置启用 `prod` 并关闭演示数据；桶须提前创建，默认不允许应用自动建桶。该文件连接现有 MinIO，不负责创建线上 MinIO 服务器或配置公网 HTTPS。
 
-直接部署 Java 服务时，设置 `SPRING_PROFILES_ACTIVE=prod` 和上述四个 MinIO 环境变量即可。正常读取、上传失败后的回滚补偿、孤立图片清理都使用同一存储实现；MySQL只保存对象key及图片元数据。
+直接部署 Java 服务时，设置 `SPRING_PROFILES_ACTIVE=prod` 和上述四个 MinIO 环境变量即可。视频封面、正常读取、上传失败后的回滚补偿、孤立媒体清理都使用同一存储实现；MySQL只保存对象key及媒体元数据。
 
-切换配置不会自动搬迁已有本地图片。若保留原数据库，需要先把媒体文件按数据库中原有的 `storage_key` 复制到目标私有桶；新生产环境可使用独立数据库和桶。数据库与对象存储应配套备份。数据库提交结果不确定时会保留对象，避免误删；若回滚补偿删除本身失败，会记录对象key，当前需人工核查清理。
+切换配置不会自动搬迁已有本地图片。若保留原数据库，需要先把媒体文件按数据库中原有的 `storage_key` 和视频的 `poster_storage_key` 复制到目标私有桶；新生产环境可使用独立数据库和桶。数据库与对象存储应配套备份。数据库提交结果不确定时会保留对象，避免误删；若回滚补偿删除本身失败，会记录对象key，当前需人工核查清理。
+
+## 视频发布
+
+发布页由用户选择“上传图文”或“上传视频”。视频使用 MP4 容器、H.264 画面和可选 AAC 音频；不兼容的编码会给出错误提示。服务端用 FFprobe 校验真实格式和时长，FFmpeg 整理 MP4 以便快速起播、清除容器元数据并生成 JPEG 封面。视频和封面共用同一媒体权限，审核前仅作者及有权限的审核员可见；修改已发布内容后重新审核。播放接口支持 HEAD、单段 Range 和拖动定位。
+
+默认视频上限为 100MB、5分钟，图片仍为每张 10MB。这是可配置的工程默认值。可在 `.env` 设置 `VIDEO_MAX_BYTES`、`VIDEO_MAX_SECONDS`；提高大小时需同时调整 `UPLOAD_MAX_FILE_SIZE`、`UPLOAD_MAX_REQUEST_SIZE` 和 `NGINX_CLIENT_MAX_BODY_SIZE`，请求上限应略大于文件上限以容纳 multipart 边界。重新执行 `docker compose up -d --build --wait` 后生效。直接运行 Java 时可用 `FFMPEG_PATH`、`FFPROBE_PATH` 指定工具路径。
+
+当前同步处理一段视频，处理繁忙时提示重试；暂不提供视频剪辑、多码率转码或混合图文视频。素材默认落在同一个本地媒体卷，生产环境的原视频与封面均写入 MinIO 私有桶。
 
 ## 本地开发与测试
 
-需要 Java 21、Maven 3.9+、Node.js 22.12+。后端集成测试使用真实临时 MySQL、Redis、RabbitMQ 和 MinIO 容器，分别验证本地与 MinIO 存储，必须保持 Docker 可用。MinIO 测试服务从官方固定源码版本构建，首次运行还需要下载 Go 工具链镜像及模块依赖；先构建下面的测试镜像。
+需要 Java 21、Maven 3.9+、Node.js 22.12+，以及 PATH 中可用的 FFmpeg / FFprobe（含 H.264 编码器，用于生成测试夹具）。Docker 镜像和 CI 会安装 FFmpeg。后端集成测试使用真实临时 MySQL、Redis、RabbitMQ 和 MinIO 容器，分别验证本地与 MinIO 存储，必须保持 Docker 可用。MinIO 测试服务从官方固定源码版本构建，首次运行还需要下载 Go 工具链镜像及模块依赖；先构建下面的测试镜像。
 
 从仓库根目录执行后端验证：
 
@@ -140,7 +149,7 @@ JaCoCo 报告输出到 `03-源码/backend/target/site/jacoco/index.html`。Windo
 └── .env.example              环境变量模板
 ```
 
-[01-schema.sql](03-源码/sql/01-schema.sql) 包含30张业务表；[02-roles-and-search.sql](03-源码/sql/02-roles-and-search.sql) 初始化角色并补充搜索索引。它们对应后端 Flyway V1、V2；正常启动采用自动迁移，不要在已有数据库中重复执行建表脚本。
+[01-schema.sql](03-源码/sql/01-schema.sql) 包含30张业务表；[02-roles-and-search.sql](03-源码/sql/02-roles-and-search.sql) 初始化角色并补充搜索索引。[03-video-media.sql](03-源码/sql/03-video-media.sql) 增加视频类型、时长与封面元数据。它们对应后端 Flyway V1、V2、V3；正常启动采用自动迁移，不要在已有数据库中重复执行建表脚本。
 
 从仓库根目录运行 `python 03-源码/scripts/backup-db.py` 可生成数据库快照，保存在本地 `.runtime/backups`。恢复工具仅接受新的 `shiguang_restore_*` 验证库，不覆盖现有库。媒体卷需要另外备份。
 

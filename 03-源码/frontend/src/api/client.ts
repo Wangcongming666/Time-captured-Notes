@@ -93,6 +93,55 @@ export async function api<T>(
 }
 export const mediaUrl = (id: string) =>
   "/api/v1/media/" + encodeURIComponent(id) + "/content";
+export const posterUrl = (id: string) =>
+  "/api/v1/media/" + encodeURIComponent(id) + "/poster";
+
+export async function uploadMedia<T>(
+  path: string,
+  body: FormData,
+  progress: (value: number) => void,
+  retry = true,
+): Promise<T> {
+  const token = await csrfToken();
+  try {
+    return await new Promise<T>((resolve, reject) => {
+      const request = new XMLHttpRequest();
+      request.open("POST", "/api/v1" + path);
+      request.setRequestHeader("X-CSRF-TOKEN", token);
+      request.timeout = 180000;
+      request.upload.onprogress = (event) => {
+        if (event.lengthComputable)
+          progress(Math.round((event.loaded / event.total) * 100));
+      };
+      request.onerror = () => reject(new ApiError(0, "上传连接中断，请重试"));
+      request.ontimeout = () => reject(new ApiError(0, "上传超时，请重试"));
+      request.onload = () => {
+        try {
+          const result = JSON.parse(request.responseText) as Envelope<T>;
+          if (request.status >= 200 && request.status < 300)
+            resolve(result.data);
+          else
+            reject(
+              new ApiError(
+                request.status,
+                result.message || "上传失败",
+                result.code,
+              ),
+            );
+        } catch {
+          reject(new ApiError(request.status, "上传服务返回异常，请稍后重试"));
+        }
+      };
+      request.send(body);
+    });
+  } catch (error) {
+    if (retry && error instanceof ApiError && error.code === "CSRF_INVALID") {
+      clearCsrf();
+      return uploadMedia(path, body, progress, false);
+    }
+    throw error;
+  }
+}
 export function queryString(
   values: Record<string, string | number | undefined | null>,
 ): string {

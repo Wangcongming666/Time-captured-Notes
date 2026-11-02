@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { api, mediaUrl } from "../../api/client";
+import { api, mediaUrl, posterUrl } from "../../api/client";
 import type {
   Note,
   User,
@@ -227,10 +227,29 @@ onMounted(load);
 <template>
   <ErrorBanner :message="error" :retry="load" />
   <div v-if="loading" class="loading-state">正在打开笔记…</div>
-  <article v-if="note" class="note-detail">
-    <div class="note-gallery">
+  <button v-if="note" class="text-button detail-back" @click="router.back()">
+    ← 返回发现
+  </button>
+  <article v-if="note && !loading" class="note-detail">
+    <div
+      class="note-gallery"
+      :class="{
+        'video-gallery': note.mediaEntries?.[0]?.mediaType === 'VIDEO',
+      }"
+    >
+      <video
+        v-if="note.mediaEntries?.[0]?.mediaType === 'VIDEO'"
+        :key="note.id"
+        :src="mediaUrl(note.mediaIds[0]!)"
+        :poster="posterUrl(note.mediaIds[0]!)"
+        controls
+        playsinline
+        preload="metadata"
+        aria-label="笔记视频"
+        @error="error = '视频无法播放，请刷新或尝试其他浏览器'"
+      />
       <img
-        v-if="note.mediaIds[selected]"
+        v-else-if="note.mediaIds[selected]"
         :src="mediaUrl(note.mediaIds[selected])"
         :alt="note.title + '，第' + (selected + 1) + '张图'"
       />
@@ -254,215 +273,228 @@ onMounted(load);
       </div>
     </div>
     <div class="note-panel">
-      <div class="note-author">
-        <RouterLink :to="'/users/' + note.authorId" class="avatar">{{
-          author?.nickname.slice(0, 1) ?? "拾"
-        }}</RouterLink
-        ><RouterLink :to="'/users/' + note.authorId">{{
-          author?.nickname ?? "作者"
-        }}</RouterLink
-        ><button
-          v-if="session.user?.id !== note.authorId"
-          class="button small"
-          :disabled="actionBusy"
-          @click="follow"
-        >
-          {{ note.following ? "已关注" : "关注" }}
-        </button>
-      </div>
-      <h1>{{ note.title }}</h1>
-      <p class="note-body">{{ note.body }}</p>
-      <div class="note-date">
-        {{
-          note.publishedAt
-            ? new Date(note.publishedAt).toLocaleString("zh-CN")
-            : ""
-        }}
-      </div>
-      <div class="note-toolbar">
-        <button
-          class="icon-action"
-          :class="{ on: note.liked }"
-          :disabled="actionBusy"
-          :aria-pressed="!!note.liked"
-          @click="like"
-        >
-          <AppIcon name="follow" />{{ note.likeCount ?? 0 }}</button
-        ><button
-          class="icon-action"
-          :class="{ on: note.favorite }"
-          @click="openFavorite"
-        >
-          <AppIcon name="collection" />{{
-            note.favorite ? "已收藏" : "收藏"
-          }}</button
-        ><span class="icon-action"
-          ><AppIcon name="comment" />{{
-            note.commentCount ?? comments.length
-          }}</span
-        >
-      </div>
-      <h2 class="small-heading">一起聊聊</h2>
-      <p v-if="!comments.length" class="hint">
-        还没有评论，留下你的第一条感想吧。
-      </p>
-      <div v-for="comment in comments" :key="comment.id" class="comment-item">
-        <span class="avatar tiny">{{ comment.authorId.slice(-1) }}</span>
-        <div class="spacer">
-          <span class="hint">用户 {{ comment.authorId }}</span>
-          <p>{{ comment.body }}</p>
-          <div class="comment-meta">
-            <button
-              v-if="comment.status === 'VISIBLE'"
-              class="text-button"
-              @click="startReport('COMMENT', comment.id)"
-            >
-              举报
-            </button>
-            <span>{{
-              new Date(comment.createdAt).toLocaleDateString("zh-CN")
-            }}</span
-            ><button
-              v-if="comment.status === 'VISIBLE'"
-              class="text-button"
-              @click="
-                replyTo = comment.id;
-                signedIn();
-              "
-            >
-              回复</button
-            ><button class="text-button" @click="showReplies(comment)">
-              查看回复</button
-            ><button
-              v-if="
-                session.user?.id === comment.authorId &&
-                comment.status !== 'DELETED'
-              "
-              class="text-button"
-              @click="removeComment(comment)"
-            >
-              删除
-            </button>
-          </div>
-          <div v-if="replies[comment.id]" class="replies">
-            <div
-              v-for="reply in replies[comment.id]"
-              :key="reply.id"
-              class="comment-item"
-            >
-              <div>
-                <span class="hint">用户 {{ reply.authorId }}</span>
-                <p>{{ reply.body }}</p>
-                <div class="comment-meta">
-                  <button
-                    v-if="reply.status === 'VISIBLE'"
-                    class="text-button"
-                    @click="startReport('COMMENT', reply.id)"
-                  >
-                    举报
-                  </button>
-                  <button
-                    v-if="reply.status === 'VISIBLE'"
-                    class="text-button"
-                    @click="
-                      replyTo = reply.id;
-                      signedIn();
-                    "
-                  >
-                    回复</button
-                  ><button
-                    v-if="session.user?.id === reply.authorId"
-                    class="text-button"
-                    @click="removeComment(reply)"
-                  >
-                    删除
-                  </button>
+      <div class="note-scroll">
+        <div class="note-author">
+          <RouterLink :to="'/users/' + note.authorId" class="avatar"
+            ><img
+              v-if="author?.avatarMediaId"
+              :src="mediaUrl(author.avatarMediaId)"
+              alt="作者头像"
+            /><span v-else>{{
+              author?.nickname.slice(0, 1) ?? "拾"
+            }}</span></RouterLink
+          ><RouterLink :to="'/users/' + note.authorId">{{
+            author?.nickname ?? "作者"
+          }}</RouterLink
+          ><button
+            v-if="session.user?.id !== note.authorId"
+            class="button small"
+            :disabled="actionBusy"
+            @click="follow"
+          >
+            {{ note.following ? "已关注" : "关注" }}
+          </button>
+        </div>
+        <h1>{{ note.title }}</h1>
+        <p class="note-body">{{ note.body }}</p>
+        <div class="note-date">
+          {{
+            note.publishedAt
+              ? new Date(note.publishedAt).toLocaleString("zh-CN")
+              : ""
+          }}
+        </div>
+        <h2 class="small-heading">一起聊聊</h2>
+        <p v-if="!comments.length" class="hint">
+          还没有评论，留下你的第一条感想吧。
+        </p>
+        <div v-for="comment in comments" :key="comment.id" class="comment-item">
+          <span class="avatar tiny">{{ comment.authorId.slice(-1) }}</span>
+          <div class="spacer">
+            <span class="hint">用户 {{ comment.authorId }}</span>
+            <p>{{ comment.body }}</p>
+            <div class="comment-meta">
+              <button
+                v-if="comment.status === 'VISIBLE'"
+                class="text-button"
+                @click="startReport('COMMENT', comment.id)"
+              >
+                举报
+              </button>
+              <span>{{
+                new Date(comment.createdAt).toLocaleDateString("zh-CN")
+              }}</span
+              ><button
+                v-if="comment.status === 'VISIBLE'"
+                class="text-button"
+                @click="
+                  replyTo = comment.id;
+                  signedIn();
+                "
+              >
+                回复</button
+              ><button class="text-button" @click="showReplies(comment)">
+                查看回复</button
+              ><button
+                v-if="
+                  session.user?.id === comment.authorId &&
+                  comment.status !== 'DELETED'
+                "
+                class="text-button"
+                @click="removeComment(comment)"
+              >
+                删除
+              </button>
+            </div>
+            <div v-if="replies[comment.id]" class="replies">
+              <div
+                v-for="reply in replies[comment.id]"
+                :key="reply.id"
+                class="comment-item"
+              >
+                <div>
+                  <span class="hint">用户 {{ reply.authorId }}</span>
+                  <p>{{ reply.body }}</p>
+                  <div class="comment-meta">
+                    <button
+                      v-if="reply.status === 'VISIBLE'"
+                      class="text-button"
+                      @click="startReport('COMMENT', reply.id)"
+                    >
+                      举报
+                    </button>
+                    <button
+                      v-if="reply.status === 'VISIBLE'"
+                      class="text-button"
+                      @click="
+                        replyTo = reply.id;
+                        signedIn();
+                      "
+                    >
+                      回复</button
+                    ><button
+                      v-if="session.user?.id === reply.authorId"
+                      class="text-button"
+                      @click="removeComment(reply)"
+                    >
+                      删除
+                    </button>
+                  </div>
                 </div>
               </div>
+              <p v-if="!replies[comment.id].length" class="hint">暂无回复</p>
             </div>
-            <p v-if="!replies[comment.id].length" class="hint">暂无回复</p>
           </div>
         </div>
-      </div>
-      <button
-        v-if="moreComments"
-        class="text-button"
-        @click="loadComments(false)"
-      >
-        更多评论
-      </button>
-      <form class="comment-composer" @submit.prevent="sendComment">
-        <input
-          v-model="message"
-          :aria-label="replyTo ? '回复评论' : '发表一条评论'"
-          :placeholder="replyTo ? '回复评论…' : '说点什么…'"
-          maxlength="500"
-        /><button
-          class="button small primary"
-          :disabled="actionBusy || !message.trim()"
-        >
-          发送
-        </button>
-      </form>
-      <button v-if="replyTo" class="text-button" @click="replyTo = null">
-        取消回复
-      </button>
-      <button class="text-button" @click="hideNote">不感兴趣，减少推荐</button>
-      <details ref="reportDetails" class="report-form">
-        <summary>
-          {{
-            reportTarget
-              ? `举报${reportTarget.type === "COMMENT" ? "评论" : "实践反馈"} #${reportTarget.id}`
-              : "举报这篇笔记"
-          }}
-        </summary>
         <button
-          v-if="reportTarget"
+          v-if="moreComments"
           class="text-button"
-          @click="reportTarget = null"
+          @click="loadComments(false)"
         >
-          改为举报这篇笔记
+          更多评论
         </button>
-        <form class="inline-form" @submit.prevent="report">
+        <button class="text-button" @click="hideNote">
+          不感兴趣，减少推荐
+        </button>
+        <details ref="reportDetails" class="report-form">
+          <summary>
+            {{
+              reportTarget
+                ? `举报${reportTarget.type === "COMMENT" ? "评论" : "实践反馈"} #${reportTarget.id}`
+                : "举报这篇笔记"
+            }}
+          </summary>
+          <button
+            v-if="reportTarget"
+            class="text-button"
+            @click="reportTarget = null"
+          >
+            改为举报这篇笔记
+          </button>
+          <form class="inline-form" @submit.prevent="report">
+            <input
+              v-model="reportReason"
+              aria-label="举报原因"
+              maxlength="500"
+              placeholder="请说明具体原因"
+              required
+            /><button class="button small" :disabled="actionBusy">
+              提交举报
+            </button>
+          </form>
+        </details>
+        <section v-if="feedback.length" class="section">
+          <h2 class="small-heading">大家实践后的感受</h2>
+          <div v-for="item in feedback" :key="item.id" class="list-row">
+            <div>
+              <p>{{ item.resultText }}</p>
+              <button
+                class="text-button"
+                @click="startReport('PRACTICE', item.id)"
+              >
+                举报反馈
+              </button>
+              <span class="hint">{{
+                {
+                  HELPFUL: "有帮助",
+                  NEUTRAL: "一般",
+                  NOT_APPLICABLE: "不适用",
+                }[item.helpfulness]
+              }}</span>
+              <div class="review-images">
+                <img
+                  v-for="id in item.mediaIds"
+                  :key="id"
+                  :src="mediaUrl(id)"
+                  alt="公开实践反馈图片"
+                  loading="lazy"
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+      <footer class="note-interactions">
+        <form class="comment-composer" @submit.prevent="sendComment">
           <input
-            v-model="reportReason"
-            aria-label="举报原因"
+            v-model="message"
+            :aria-label="replyTo ? '回复评论' : '发表一条评论'"
+            :placeholder="replyTo ? '回复评论…' : '说点什么…'"
             maxlength="500"
-            placeholder="请说明具体原因"
-            required
-          /><button class="button small" :disabled="actionBusy">
-            提交举报
+          /><button
+            class="button small primary"
+            :disabled="actionBusy || !message.trim()"
+          >
+            发送
           </button>
         </form>
-      </details>
-      <section v-if="feedback.length" class="section">
-        <h2 class="small-heading">大家实践后的感受</h2>
-        <div v-for="item in feedback" :key="item.id" class="list-row">
-          <div>
-            <p>{{ item.resultText }}</p>
-            <button
-              class="text-button"
-              @click="startReport('PRACTICE', item.id)"
-            >
-              举报反馈
-            </button>
-            <span class="hint">{{
-              { HELPFUL: "有帮助", NEUTRAL: "一般", NOT_APPLICABLE: "不适用" }[
-                item.helpfulness
-              ]
-            }}</span>
-            <div class="review-images">
-              <img
-                v-for="id in item.mediaIds"
-                :key="id"
-                :src="mediaUrl(id)"
-                alt="公开实践反馈图片"
-                loading="lazy"
-              />
-            </div>
-          </div>
+        <button v-if="replyTo" class="text-button" @click="replyTo = null">
+          取消回复
+        </button>
+        <div class="note-toolbar">
+          <button
+            class="icon-action"
+            :class="{ on: note.liked }"
+            :disabled="actionBusy"
+            :aria-pressed="!!note.liked"
+            @click="like"
+          >
+            <AppIcon name="follow" />{{ note.likeCount ?? 0 }}</button
+          ><button
+            class="icon-action"
+            :class="{ on: note.favorite }"
+            @click="openFavorite"
+          >
+            <AppIcon name="collection" />{{
+              note.favorite ? "已收藏" : "收藏"
+            }}</button
+          ><span class="icon-action"
+            ><AppIcon name="comment" />{{
+              note.commentCount ?? comments.length
+            }}</span
+          >
         </div>
-      </section>
+      </footer>
     </div>
   </article>
   <dialog ref="dialog" class="dialog" aria-labelledby="favorite-title">

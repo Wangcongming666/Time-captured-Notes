@@ -4,7 +4,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-/** Composition root; business modules remain independent. */
+/** Composition root; Spring Boot scans the conventional controller/service/repository layers. */
 @EnableScheduling
 @SpringBootApplication
 public class NotesApplication {

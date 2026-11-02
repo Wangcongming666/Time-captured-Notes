@@ -1,6 +1,6 @@
 # 拾光笔记 · Time-captured Notes
 
-小红书风格的图文与视频社区，个人软件工程课程项目。前后端分离，采用模块化单体架构，支持图文和视频发布、内容审核、互动通知，以及“收藏→实践→反馈”闭环。
+小红书风格的图文与视频社区，个人软件工程课程项目。前后端分离，采用经典 Spring Boot 分层架构，支持图文和视频发布、内容审核、互动通知，以及“收藏→实践→反馈”闭环。
 
 ## 功能
 
@@ -25,7 +25,36 @@
 | 部署 | Docker Compose、Nginx |
 | 验证 | JUnit、ArchUnit、Testcontainers、Vitest、Playwright、GitHub Actions |
 
-后端分为 identity、content、discovery、social、collection、notification、governance、statistics 八个业务模块；跨模块事务由 workflows 编排。MySQL 保存业务事实，Redis 用于缓存与限流，RabbitMQ 处理异步通知和统计。
+后端按经典 Spring Boot 技术层分包：`controller` 接收请求，`service` 定义业务接口及应用服务，`service.impl` 实现业务逻辑，`repository` 承担现有 SQL 数据访问，`mapper` 和 `entity` 放置 MyBatis-Plus Mapper 与数据库实体。账号、内容、发现、互动、收藏实践、通知、治理、统计八项业务能力保持不变，事务由业务服务协调。MySQL 保存业务事实，Redis 用于缓存与限流，RabbitMQ 处理异步通知和统计。
+
+后端 Java 目录位于 `03-源码/backend/src/main/java/cn/shiguang/notes`：
+
+```text
+cn.shiguang.notes/
+├── NotesApplication.java       Spring Boot 启动类
+├── controller/                 REST 控制器、advice 全局异常处理
+├── service/                    业务接口和应用服务
+│   ├── impl/                   XxxServiceImpl 实现
+│   └── support/                幂等命令、分页等服务支持
+├── repository/                 SQL 数据访问接口
+│   ├── impl/                   现有 JDBC SQL 实现
+│   ├── query/                  只读聚合查询
+│   └── support/                数据库访问支持
+├── mapper/                     MyBatis-Plus Mapper
+├── entity/                     数据库实体，如 UserEntity
+├── dto/                        请求上下文与统一响应对象
+├── config/                     Spring 配置
+├── security/                   认证、CSRF、限流
+├── cache/                      Redis 缓存
+├── storage/                    本地/MinIO 存储及视频处理
+├── messaging/                  消息、Outbox/Inbox
+├── schedule/                   定时任务
+├── bootstrap/                  演示数据初始化
+├── validation/                 纯业务规则校验
+└── common/                     公共契约、工具、业务异常
+```
+
+`UserMapper extends BaseMapper<UserEntity>` 保留实际 MyBatis-Plus 集成，其余已有 SQL 继续由 repository 执行。本次调整只改变 Java 组织方式，不更改数据库结构或 HTTP 接口地址。架构测试约束 Controller 经 Service 访问持久层，并防止持久层反向依赖 Controller/Service。
 
 ## 快速启动
 

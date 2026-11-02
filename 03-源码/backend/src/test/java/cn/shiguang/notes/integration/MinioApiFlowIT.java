@@ -42,7 +42,7 @@ class MinioApiFlowIT extends ApiFlowIT {
   @Test
   @Order(17)
   void objectsStayPrivateAndNeverCreateALocalStorageDirectory() throws Exception {
-    assertInstanceOf(cn.shiguang.notes.platform.storage.MinioMediaStore.class, mediaStore);
+    assertInstanceOf(cn.shiguang.notes.storage.MinioMediaStore.class, mediaStore);
     var media =
         database.one(
             "SELECT m.id,m.storage_key FROM t_media m JOIN t_note_media nm ON nm.media_id=m.id JOIN"
@@ -92,6 +92,6 @@ class MinioApiFlowIT extends ApiFlowIT {
             .build());
     assertThrows(
         IllegalStateException.class,
-        () -> new cn.shiguang.notes.platform.storage.MinioMediaStore(sdk, bucket, false, json));
+        () -> new cn.shiguang.notes.storage.MinioMediaStore(sdk, bucket, false, json));
   }
 }

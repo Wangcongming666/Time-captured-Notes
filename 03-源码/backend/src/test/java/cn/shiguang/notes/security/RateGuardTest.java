@@ -3,8 +3,7 @@ package cn.shiguang.notes.security;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import cn.shiguang.notes.platform.security.RateGuard;
-import cn.shiguang.notes.shared.error.BizException;
+import cn.shiguang.notes.common.exception.BizException;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.core.StringRedisTemplate;
 

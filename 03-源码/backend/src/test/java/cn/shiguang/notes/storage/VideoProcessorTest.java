@@ -2,8 +2,7 @@ package cn.shiguang.notes.storage;
 
 import static org.assertj.core.api.Assertions.*;
 
-import cn.shiguang.notes.platform.storage.VideoProcessor;
-import cn.shiguang.notes.shared.error.BizException;
+import cn.shiguang.notes.common.exception.BizException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.file.*;
 import java.util.concurrent.TimeUnit;

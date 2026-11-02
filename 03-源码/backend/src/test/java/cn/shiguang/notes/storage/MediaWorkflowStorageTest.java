@@ -3,12 +3,12 @@ package cn.shiguang.notes.storage;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import cn.shiguang.notes.modules.content.api.ContentApi;
-import cn.shiguang.notes.platform.readmodel.PublicReadModel;
-import cn.shiguang.notes.platform.storage.LocalMediaStore;
-import cn.shiguang.notes.shared.contract.*;
-import cn.shiguang.notes.shared.error.BizException;
-import cn.shiguang.notes.workflows.content.MediaUseCases;
+import cn.shiguang.notes.common.contract.MediaStore;
+import cn.shiguang.notes.common.exception.BizException;
+import cn.shiguang.notes.dto.Actor;
+import cn.shiguang.notes.repository.query.PublicQueryRepository;
+import cn.shiguang.notes.service.ContentService;
+import cn.shiguang.notes.service.MediaService;
 import java.nio.file.*;
 import java.util.*;
 import org.junit.jupiter.api.*;
@@ -28,7 +28,7 @@ class MediaWorkflowStorageTest {
 
   @Test
   void unknownCommitOutcomeKeepsThePossiblyCommittedObject() throws Exception {
-    var content = mock(ContentApi.class);
+    var content = mock(ContentService.class);
     when(content.addMedia(
             any(),
             anyString(),
@@ -40,8 +40,8 @@ class MediaWorkflowStorageTest {
             anyString()))
         .thenReturn(Map.of("id", "1"));
     var use =
-        new MediaUseCases(
-            new LocalMediaStore(root.toString()), content, mock(PublicReadModel.class));
+        new MediaService(
+            new LocalMediaStore(root.toString()), content, mock(PublicQueryRepository.class));
     TransactionSynchronizationManager.initSynchronization();
     try {
       use.upload(new Actor(1, Set.of("USER")), image(), "NOTE");
@@ -57,7 +57,7 @@ class MediaWorkflowStorageTest {
 
   @Test
   void rollbackDeletesObjectAfterSuccessfulUpload() throws Exception {
-    var content = mock(ContentApi.class);
+    var content = mock(ContentService.class);
     when(content.addMedia(
             any(),
             anyString(),
@@ -69,8 +69,8 @@ class MediaWorkflowStorageTest {
             anyString()))
         .thenReturn(Map.of("id", "1"));
     var use =
-        new MediaUseCases(
-            new LocalMediaStore(root.toString()), content, mock(PublicReadModel.class));
+        new MediaService(
+            new LocalMediaStore(root.toString()), content, mock(PublicQueryRepository.class));
     TransactionSynchronizationManager.initSynchronization();
     try {
       use.upload(new Actor(1, Set.of("USER")), image(), "NOTE");
@@ -89,7 +89,7 @@ class MediaWorkflowStorageTest {
 
   @Test
   void metadataFailureCleansObjectWithoutMaskingOriginalError() throws Exception {
-    var content = mock(ContentApi.class);
+    var content = mock(ContentService.class);
     when(content.addMedia(
             any(),
             anyString(),
@@ -101,8 +101,8 @@ class MediaWorkflowStorageTest {
             anyString()))
         .thenThrow(BizException.conflict("metadata conflict"));
     var use =
-        new MediaUseCases(
-            new LocalMediaStore(root.toString()), content, mock(PublicReadModel.class));
+        new MediaService(
+            new LocalMediaStore(root.toString()), content, mock(PublicQueryRepository.class));
     TransactionSynchronizationManager.initSynchronization();
     try {
       assertEquals(
@@ -122,9 +122,9 @@ class MediaWorkflowStorageTest {
   @Test
   void unauthorizedReadsNeverContactTheObjectStore() throws Exception {
     var store = mock(MediaStore.class);
-    var content = mock(ContentApi.class);
+    var content = mock(ContentService.class);
     when(content.media(1)).thenReturn(Map.of("storageKey", "private.png"));
-    var use = new MediaUseCases(store, content, mock(PublicReadModel.class));
+    var use = new MediaService(store, content, mock(PublicQueryRepository.class));
     assertEquals(404, assertThrows(BizException.class, () -> use.read(Actor.guest(), 1)).status());
     verifyNoInteractions(store);
   }

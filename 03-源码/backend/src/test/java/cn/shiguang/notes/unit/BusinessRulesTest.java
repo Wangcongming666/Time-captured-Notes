@@ -2,11 +2,11 @@ package cn.shiguang.notes.unit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import cn.shiguang.notes.modules.collection.domain.PracticeRules;
-import cn.shiguang.notes.modules.content.domain.NoteRules;
-import cn.shiguang.notes.modules.discovery.domain.RecommendationPolicy;
-import cn.shiguang.notes.modules.identity.domain.IdentityRules;
-import cn.shiguang.notes.shared.error.BizException;
+import cn.shiguang.notes.common.exception.BizException;
+import cn.shiguang.notes.validation.IdentityRules;
+import cn.shiguang.notes.validation.NoteRules;
+import cn.shiguang.notes.validation.PracticeRules;
+import cn.shiguang.notes.validation.RecommendationPolicy;
 import org.junit.jupiter.api.Test;
 
 /** Literal business cases; catches illegal state, boundary, and ranking changes. */

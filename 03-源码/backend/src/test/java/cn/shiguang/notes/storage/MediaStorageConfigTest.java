@@ -4,8 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
-import cn.shiguang.notes.platform.config.MediaStorageConfig;
-import cn.shiguang.notes.platform.storage.*;
+import cn.shiguang.notes.config.MediaStorageConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.minio.*;
 import org.junit.jupiter.api.Test;

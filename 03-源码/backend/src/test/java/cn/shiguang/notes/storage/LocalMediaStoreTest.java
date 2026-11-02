@@ -2,7 +2,6 @@ package cn.shiguang.notes.storage;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import cn.shiguang.notes.platform.storage.LocalMediaStore;
 import java.io.*;
 import java.nio.file.*;
 import org.junit.jupiter.api.Test;

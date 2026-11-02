@@ -1,67 +1,74 @@
 package cn.shiguang.notes.architecture;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.tngtech.archunit.core.domain.JavaClasses;
-import com.tngtech.archunit.core.importer.ClassFileImporter;
+import com.tngtech.archunit.core.importer.*;
 import org.junit.jupiter.api.Test;
 
 class ArchitectureTest {
-  private final JavaClasses classes = new ClassFileImporter().importPackages("cn.shiguang.notes");
+  private final JavaClasses classes =
+      new ClassFileImporter()
+          .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+          .importPackages("cn.shiguang.notes");
 
   @Test
-  void domainDoesNotDependOnFrameworkOrTransport() {
+  void classicLayersExistAndLegacyPackagesAreRemoved() {
+    for (String type :
+        new String[] {
+          "controller.CommunityController",
+          "controller.IdentityController",
+          "service.ContentService",
+          "service.impl.ContentServiceImpl",
+          "mapper.UserMapper",
+          "entity.UserEntity"
+        })
+      assertTrue(classes.contain("cn.shiguang.notes." + type), "Missing classic layer: " + type);
+    for (var type : classes)
+      for (String legacy : new String[] {"modules", "platform", "shared", "web", "workflows"})
+        assertFalse(
+            type.getPackageName().startsWith("cn.shiguang.notes." + legacy + "."), type.getName());
+  }
+
+  @Test
+  void controllersUseServicesInsteadOfPersistenceOrStorage() {
     noClasses()
         .that()
-        .resideInAPackage("..modules..domain..")
+        .resideInAPackage("..controller..")
         .should()
         .dependOnClassesThat()
-        .resideInAnyPackage("org.springframework..", "..web..", "..workflows..", "..platform..")
+        .resideInAnyPackage("..repository..", "..mapper..", "..service.impl..", "..storage..")
         .check(classes);
   }
 
   @Test
-  void modulesCannotCallOtherModuleImplementations() {
-    for (String module :
-        new String[] {
-          "identity",
-          "content",
-          "social",
-          "collection",
-          "governance",
-          "discovery",
-          "notification",
-          "statistics"
-        }) {
-      noClasses()
-          .that()
-          .resideInAPackage("..modules." + module + "..")
-          .should()
-          .dependOnClassesThat()
-          .resideInAnyPackage("..web..", "..workflows..")
-          .check(classes);
-      for (String other :
-          new String[] {
-            "identity",
-            "content",
-            "social",
-            "collection",
-            "governance",
-            "discovery",
-            "notification",
-            "statistics"
-          })
-        if (!module.equals(other))
-          noClasses()
-              .that()
-              .resideInAPackage("..modules." + module + "..")
-              .should()
-              .dependOnClassesThat()
-              .resideInAnyPackage(
-                  "..modules." + other + ".application..",
-                  "..modules." + other + ".infrastructure..",
-                  "..modules." + other + ".domain..")
-              .check(classes);
-    }
+  void serviceAndPersistenceDoNotDependOnTransport() {
+    noClasses()
+        .that()
+        .resideInAnyPackage("..service..", "..repository..", "..mapper..")
+        .should()
+        .dependOnClassesThat()
+        .resideInAPackage("..controller..")
+        .check(classes);
+    noClasses()
+        .that()
+        .resideInAnyPackage("..repository..", "..mapper..")
+        .should()
+        .dependOnClassesThat()
+        .resideInAPackage("..service..")
+        .check(classes);
+  }
+
+  @Test
+  void pureValidationRemainsIndependentOfFrameworksAndIo() {
+    noClasses()
+        .that()
+        .resideInAPackage("..validation..")
+        .should()
+        .dependOnClassesThat()
+        .resideInAnyPackage(
+            "org.springframework..", "..repository..", "..controller..", "..storage..")
+        .check(classes);
   }
 }

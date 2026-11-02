@@ -2,8 +2,8 @@ package cn.shiguang.notes.storage;
 
 import static org.assertj.core.api.Assertions.*;
 
-import cn.shiguang.notes.shared.contract.ByteRange;
-import cn.shiguang.notes.shared.error.BizException;
+import cn.shiguang.notes.common.exception.BizException;
+import cn.shiguang.notes.common.util.ByteRange;
 import org.junit.jupiter.api.Test;
 
 class MediaRangeTest {

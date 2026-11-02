@@ -113,7 +113,7 @@ class ApiFlowIT {
     long stagedImage =
         database.insert(
             "t_media",
-            cn.shiguang.notes.shared.contract.Data.map(
+            cn.shiguang.notes.common.util.Data.map(
                 "owner_id",
                 database.one("SELECT owner_id FROM t_media WHERE id=?", mediaId).get("ownerId"),
                 "storage_key",
@@ -316,13 +316,13 @@ class ApiFlowIT {
   }
 
   @org.springframework.beans.factory.annotation.Autowired
-  cn.shiguang.notes.platform.application.MediaMaintenance maintenance;
+  cn.shiguang.notes.schedule.MediaMaintenance maintenance;
 
   @org.springframework.beans.factory.annotation.Value("${app.media-root}")
   String mediaRoot;
 
   @org.springframework.beans.factory.annotation.Autowired
-  cn.shiguang.notes.shared.contract.MediaStore mediaStore;
+  cn.shiguang.notes.common.contract.MediaStore mediaStore;
 
   @Test
   @Order(14)
@@ -392,13 +392,13 @@ class ApiFlowIT {
   }
 
   @org.springframework.beans.factory.annotation.Autowired
-  cn.shiguang.notes.platform.persistence.Database database;
+  cn.shiguang.notes.repository.support.Database database;
 
   @org.springframework.beans.factory.annotation.Autowired
   org.springframework.transaction.support.TransactionTemplate transactions;
 
   @org.springframework.beans.factory.annotation.Autowired
-  cn.shiguang.notes.shared.contract.EventPort events;
+  cn.shiguang.notes.common.contract.EventPort events;
 
   @Container
   static final MySQLContainer<?> MYSQL =

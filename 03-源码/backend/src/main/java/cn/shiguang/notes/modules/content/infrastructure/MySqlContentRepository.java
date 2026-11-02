@@ -28,6 +28,13 @@ public class MySqlContentRepository implements ContentRepository {
         .toList();
   }
 
+  public List<Map<String, Object>> mediaEntries(long id) {
+    return db.query(
+        "SELECT m.id,m.media_type,m.mime,m.width,m.height,m.duration_ms FROM t_note_media nm JOIN"
+            + " t_media m ON m.id=nm.media_id WHERE nm.note_id=? ORDER BY nm.position",
+        id);
+  }
+
   public List<Long> topicIds(long id) {
     return db.query("SELECT topic_id FROM t_note_topic WHERE note_id=? ORDER BY id", id).stream()
         .map(m -> Data.id(m, "topicId"))
@@ -120,13 +127,17 @@ public class MySqlContentRepository implements ContentRepository {
             .toList();
     var all = new TreeSet<Long>(ids);
     all.addAll(old);
+    var types = new ArrayList<String>();
     for (long id : all) {
       var m = media(id, true);
+      if (ids.contains(id)) types.add(Data.text(m, "mediaType"));
       if (Data.id(m, "ownerId") != actor || !purpose.equals(m.get("purpose")))
         throw BizException.forbidden();
       if (!old.contains(id) && !"STAGED".equals(m.get("status")))
         throw BizException.conflict("图片已被其他内容使用");
     }
+    if (note) cn.shiguang.notes.modules.content.domain.MediaRules.validateNote(types);
+    else if (types.contains("VIDEO")) throw BizException.invalid("实践反馈仅支持图片");
     db.update("DELETE FROM " + table + " WHERE " + column + "=?", target);
     for (long id : old)
       if (!ids.contains(id)) db.update("UPDATE t_media SET status='STAGED' WHERE id=?", id);

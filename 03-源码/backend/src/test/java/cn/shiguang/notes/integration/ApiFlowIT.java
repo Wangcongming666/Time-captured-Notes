@@ -26,6 +26,232 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ApiFlowIT {
   @Test
+  @Order(17)
+  void videoUploadReviewRangePlaybackAndVisibilityUseTheSameAuthorization() throws Exception {
+    login("demo_user");
+    java.nio.file.Path dir = java.nio.file.Files.createTempDirectory("video-http-test-");
+    String mediaId;
+    byte[] original;
+    try {
+      var path = dir.resolve("fixture.mp4");
+      var ffmpeg =
+          new ProcessBuilder(
+                  "ffmpeg",
+                  "-v",
+                  "error",
+                  "-nostdin",
+                  "-y",
+                  "-f",
+                  "lavfi",
+                  "-i",
+                  "color=c=blue:s=160x240:d=1",
+                  "-c:v",
+                  "libx264",
+                  "-pix_fmt",
+                  "yuv420p",
+                  path.toString())
+              .redirectError(ProcessBuilder.Redirect.INHERIT)
+              .start();
+      assertTrue(ffmpeg.waitFor(30, java.util.concurrent.TimeUnit.SECONDS));
+      assertEquals(0, ffmpeg.exitValue());
+      String boundary = "video-boundary";
+      var upload = new java.io.ByteArrayOutputStream();
+      upload.write(
+          ("--"
+                  + boundary
+                  + "\r\n"
+                  + "Content-Disposition: form-data; name=\"file\"; filename=\"test.mp4\"\r\n"
+                  + "Content-Type: video/mp4\r\n\r\n")
+              .getBytes());
+      upload.write(java.nio.file.Files.readAllBytes(path));
+      upload.write(("\r\n--" + boundary + "--\r\n").getBytes());
+      var response =
+          client.send(
+              HttpRequest.newBuilder(
+                      URI.create("http://localhost:" + port + "/api/v1/media/videos"))
+                  .header("X-CSRF-TOKEN", csrf)
+                  .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+                  .POST(HttpRequest.BodyPublishers.ofByteArray(upload.toByteArray()))
+                  .build(),
+              HttpResponse.BodyHandlers.ofString());
+      assertEquals(200, response.statusCode(), response.body());
+      var uploaded = (Map<?, ?>) json.readValue(response.body(), Map.class).get("data");
+      assertEquals("VIDEO", uploaded.get("mediaType"));
+      mediaId = uploaded.get("id").toString();
+      try (var stream =
+          mediaStore.open(
+              database
+                  .one("SELECT storage_key FROM t_media WHERE id=?", mediaId)
+                  .get("storageKey")
+                  .toString())) {
+        original = stream.readAllBytes();
+      }
+    } finally {
+      try (var paths = java.nio.file.Files.list(dir)) {
+        for (var path : paths.toList()) java.nio.file.Files.deleteIfExists(path);
+      }
+      java.nio.file.Files.deleteIfExists(dir);
+    }
+    var anonymous = HttpClient.newHttpClient();
+    String root = "http://localhost:" + port + "/api/v1/media/" + mediaId;
+    assertEquals(
+        404,
+        anonymous
+            .send(
+                HttpRequest.newBuilder(URI.create(root + "/content")).GET().build(),
+                HttpResponse.BodyHandlers.discarding())
+            .statusCode());
+    assertEquals(
+        404,
+        anonymous
+            .send(
+                HttpRequest.newBuilder(URI.create(root + "/poster")).GET().build(),
+                HttpResponse.BodyHandlers.discarding())
+            .statusCode());
+    var topics = (Map<?, ?>) call("GET", "/topics", null, 200).get("data");
+    String topic = ((Map<?, ?>) ((List<?>) topics.get("items")).getFirst()).get("id").toString();
+    long stagedImage =
+        database.insert(
+            "t_media",
+            cn.shiguang.notes.shared.contract.Data.map(
+                "owner_id",
+                database.one("SELECT owner_id FROM t_media WHERE id=?", mediaId).get("ownerId"),
+                "storage_key",
+                UUID.randomUUID() + ".png",
+                "purpose",
+                "NOTE",
+                "mime",
+                "image/png",
+                "size_bytes",
+                1,
+                "width",
+                1,
+                "height",
+                1,
+                "sha256",
+                "c".repeat(64)));
+    long beforeMixed = database.count("SELECT COUNT(*) FROM t_note");
+    call(
+        "POST",
+        "/notes",
+        Map.of(
+            "title",
+            "不能混合素材",
+            "body",
+            "测试",
+            "mediaIds",
+            List.of(mediaId, Long.toString(stagedImage)),
+            "topicIds",
+            List.of(topic)),
+        400);
+    assertEquals(beforeMixed, database.count("SELECT COUNT(*) FROM t_note"));
+    assertEquals(
+        "STAGED", database.one("SELECT status FROM t_media WHERE id=?", mediaId).get("status"));
+    var created =
+        (Map<?, ?>)
+            call(
+                    "POST",
+                    "/notes",
+                    Map.of(
+                        "title",
+                        "视频发布与播放测试",
+                        "body",
+                        "真实视频及封面走统一审核权限",
+                        "mediaIds",
+                        List.of(mediaId),
+                        "topicIds",
+                        List.of(topic)),
+                    200)
+                .get("data");
+    String noteId = created.get("id").toString();
+    var owner = (Map<?, ?>) call("GET", "/me/notes/" + noteId, null, 200).get("data");
+    assertEquals(
+        "VIDEO", ((Map<?, ?>) ((List<?>) owner.get("mediaEntries")).getFirst()).get("mediaType"));
+    call("POST", "/notes/" + noteId + "/submit", Map.of("version", created.get("version")), 200);
+    login("demo_reviewer");
+    assertEquals(
+        206,
+        client
+            .send(
+                HttpRequest.newBuilder(URI.create(root + "/content"))
+                    .header("Range", "bytes=0-31")
+                    .GET()
+                    .build(),
+                HttpResponse.BodyHandlers.discarding())
+            .statusCode());
+    approveTarget(noteId, "NOTE");
+    var range =
+        anonymous.send(
+            HttpRequest.newBuilder(URI.create(root + "/content"))
+                .header("Range", "bytes=2-31")
+                .GET()
+                .build(),
+            HttpResponse.BodyHandlers.ofByteArray());
+    assertEquals(206, range.statusCode());
+    assertArrayEquals(Arrays.copyOfRange(original, 2, 32), range.body());
+    assertEquals(
+        "bytes 2-31/" + original.length, range.headers().firstValue("Content-Range").orElseThrow());
+    var head =
+        anonymous.send(
+            HttpRequest.newBuilder(URI.create(root + "/content"))
+                .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                .build(),
+            HttpResponse.BodyHandlers.ofByteArray());
+    assertEquals(200, head.statusCode());
+    assertEquals(0, head.body().length);
+    assertEquals(
+        original.length, Long.parseLong(head.headers().firstValue("Content-Length").orElseThrow()));
+    var invalid =
+        anonymous.send(
+            HttpRequest.newBuilder(URI.create(root + "/content"))
+                .header("Range", "bytes=999999999-")
+                .GET()
+                .build(),
+            HttpResponse.BodyHandlers.discarding());
+    assertEquals(416, invalid.statusCode());
+    var poster =
+        anonymous.send(
+            HttpRequest.newBuilder(URI.create(root + "/poster")).GET().build(),
+            HttpResponse.BodyHandlers.ofByteArray());
+    assertEquals(200, poster.statusCode());
+    assertNotNull(javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(poster.body())));
+    login("demo_user");
+    owner = (Map<?, ?>) call("GET", "/me/notes/" + noteId, null, 200).get("data");
+    call(
+        "PUT",
+        "/notes/" + noteId,
+        Map.of(
+            "version",
+            owner.get("version"),
+            "title",
+            "视频修改后需要重新审核",
+            "body",
+            "修改测试",
+            "mediaIds",
+            List.of(mediaId),
+            "topicIds",
+            List.of(topic)),
+        200);
+    assertEquals(
+        404,
+        anonymous
+            .send(
+                HttpRequest.newBuilder(URI.create(root + "/content"))
+                    .header("Range", "bytes=0-31")
+                    .GET()
+                    .build(),
+                HttpResponse.BodyHandlers.discarding())
+            .statusCode());
+    assertEquals(
+        404,
+        anonymous
+            .send(
+                HttpRequest.newBuilder(URI.create(root + "/poster")).GET().build(),
+                HttpResponse.BodyHandlers.discarding())
+            .statusCode());
+  }
+
+  @Test
   @Order(16)
   void feedbackApprovalIsInvalidatedBySourceRevisionWithoutLosingPrivateRecord() throws Exception {
     login("demo_user");

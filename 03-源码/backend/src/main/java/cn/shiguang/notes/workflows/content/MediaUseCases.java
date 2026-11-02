@@ -111,6 +111,51 @@ public class MediaUseCases {
     }
   }
 
+  public org.springframework.http.ResponseEntity<Resource> stream(
+      Actor actor, long id, boolean poster, String range, String ifRange, boolean head)
+      throws IOException {
+    var media = content.media(id);
+    if (!access.mediaAllowed(actor, media)) throw BizException.missing();
+    if (poster && !"VIDEO".equals(media.get("mediaType"))) throw BizException.missing();
+    String key = Data.text(media, poster ? "posterStorageKey" : "storageKey");
+    long size = Data.id(media, poster ? "posterSizeBytes" : "sizeBytes");
+    String etag = "\"" + Data.text(media, "sha256") + (poster ? "-poster" : "") + "\"";
+    ByteRange selected = null;
+    if (range != null && (ifRange == null || ifRange.equals(etag))) {
+      try {
+        selected = ByteRange.parse(range, size);
+      } catch (BizException e) {
+        return org.springframework.http.ResponseEntity.status(416)
+            .header("Content-Range", "bytes */" + size)
+            .cacheControl(org.springframework.http.CacheControl.noStore())
+            .build();
+      }
+    }
+    var response =
+        org.springframework.http.ResponseEntity.status(selected == null ? 200 : 206)
+            .contentType(
+                org.springframework.http.MediaType.parseMediaType(
+                    poster ? "image/jpeg" : Data.text(media, "mime")))
+            .contentLength(selected == null ? size : selected.length())
+            .cacheControl(org.springframework.http.CacheControl.noStore())
+            .header("Accept-Ranges", "bytes")
+            .header("ETag", etag)
+            .header("X-Content-Type-Options", "nosniff");
+    if (selected != null)
+      response.header(
+          "Content-Range", "bytes " + selected.start() + "-" + selected.end() + "/" + size);
+    if (head) return response.build();
+    try {
+      return response.body(
+          new InputStreamResource(
+              selected == null
+                  ? store.open(key)
+                  : store.openRange(key, selected.start(), selected.length())));
+    } catch (FileNotFoundException e) {
+      throw BizException.missing();
+    }
+  }
+
   private void deleteQuietly(String key) {
     try {
       store.delete(key);

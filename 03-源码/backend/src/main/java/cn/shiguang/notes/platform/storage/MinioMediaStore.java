@@ -60,10 +60,16 @@ public class MinioMediaStore implements MediaStore, AutoCloseable {
   }
 
   public void put(String key, byte[] bytes, String contentType) throws IOException {
+    try (var input = new ByteArrayInputStream(bytes)) {
+      put(key, input, bytes.length, contentType);
+    }
+  }
+
+  public void put(String key, InputStream in, long size, String contentType) throws IOException {
     MediaStore.validateKey(key);
-    try (var in = new ByteArrayInputStream(bytes)) {
+    try {
       client.putObject(
-          PutObjectArgs.builder().bucket(bucket).object(key).stream(in, bytes.length, -1)
+          PutObjectArgs.builder().bucket(bucket).object(key).stream(in, size, -1)
               .contentType(contentType)
               .build());
     } catch (Exception e) {
@@ -72,9 +78,19 @@ public class MinioMediaStore implements MediaStore, AutoCloseable {
   }
 
   public InputStream open(String key) throws IOException {
+    return get(key, null, null);
+  }
+
+  public InputStream openRange(String key, long offset, long length) throws IOException {
+    return get(key, offset, length);
+  }
+
+  private InputStream get(String key, Long offset, Long length) throws IOException {
     MediaStore.validateKey(key);
     try {
-      return client.getObject(GetObjectArgs.builder().bucket(bucket).object(key).build());
+      var args = GetObjectArgs.builder().bucket(bucket).object(key);
+      if (offset != null) args.offset(offset).length(length);
+      return client.getObject(args.build());
     } catch (ErrorResponseException e) {
       if (java.util.Set.of("NoSuchKey", "NoSuchObject").contains(e.errorResponse().code()))
         throw new FileNotFoundException(key);

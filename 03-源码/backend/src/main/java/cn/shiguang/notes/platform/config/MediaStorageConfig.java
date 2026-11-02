@@ -44,9 +44,9 @@ public class MediaStorageConfig {
     var http =
         new OkHttpClient.Builder()
             .connectTimeout(Duration.ofSeconds(3))
-            .readTimeout(Duration.ofSeconds(10))
-            .writeTimeout(Duration.ofSeconds(10))
-            .callTimeout(Duration.ofSeconds(12))
+            .readTimeout(Duration.ofSeconds(30))
+            .writeTimeout(Duration.ofSeconds(60))
+            .callTimeout(Duration.ofSeconds(90))
             .retryOnConnectionFailure(false)
             .build();
     var client =

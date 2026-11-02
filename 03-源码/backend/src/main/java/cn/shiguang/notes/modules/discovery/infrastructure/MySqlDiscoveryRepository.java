@@ -19,8 +19,10 @@ public class MySqlDiscoveryRepository implements DiscoveryRepository {
       long user, String mode, String category, String keyword, Long topic, Long author) {
     String sql =
         "SELECT n.id,n.author_id,n.title,n.published_at,(SELECT media_id FROM t_note_media nm WHERE"
-            + " nm.note_id=n.id ORDER BY position LIMIT 1) AS cover_media_id,u.nickname AS"
-            + " author_name,COALESCE(m.like_count,0) AS like_count,COALESCE(m.favorite_count,0) AS"
+            + " nm.note_id=n.id ORDER BY position LIMIT 1) AS cover_media_id,cover.media_type AS"
+            + " cover_media_type,cover.duration_ms, u.avatar_media_id AS"
+            + " author_avatar_media_id,u.nickname AS author_name,COALESCE(m.like_count,0) AS"
+            + " like_count,COALESCE(m.favorite_count,0) AS"
             + " favorite_count,COALESCE(m.comment_count,0) AS comment_count,EXISTS(SELECT 1 FROM"
             + " t_follow f WHERE f.follower_id=? AND f.followee_id=n.author_id) AS"
             + " following,EXISTS(SELECT 1 FROM t_note_topic nt JOIN t_interest i ON"
@@ -28,8 +30,10 @@ public class MySqlDiscoveryRepository implements DiscoveryRepository {
             + " interest,EXISTS(SELECT 1 FROM t_note_topic nt JOIN t_interest i ON"
             + " i.topic_id=nt.topic_id WHERE nt.note_id=n.id AND i.user_id=? AND i.mode='REDUCE')"
             + " AS reduced FROM t_note n JOIN t_user u ON u.id=n.author_id LEFT JOIN t_note_metric"
-            + " m ON m.note_id=n.id WHERE n.status='PUBLISHED' AND NOT EXISTS(SELECT 1 FROM"
-            + " t_hidden_note h WHERE h.note_id=n.id AND h.user_id=?)";
+            + " m ON m.note_id=n.id LEFT JOIN t_note_media first_media ON first_media.note_id=n.id"
+            + " AND first_media.position=1 LEFT JOIN t_media cover ON cover.id=first_media.media_id"
+            + " WHERE n.status='PUBLISHED' AND NOT EXISTS(SELECT 1 FROM t_hidden_note h WHERE"
+            + " h.note_id=n.id AND h.user_id=?)";
     var args = new ArrayList<Object>(List.of(user, user, user, user));
     if (mode.equals("following")) {
       sql +=

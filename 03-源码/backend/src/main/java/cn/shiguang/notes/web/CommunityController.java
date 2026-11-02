@@ -4,6 +4,7 @@ import cn.shiguang.notes.platform.security.RequestSecurityFilter;
 import cn.shiguang.notes.shared.contract.*;
 import cn.shiguang.notes.workflows.*;
 import cn.shiguang.notes.workflows.content.MediaUseCases;
+import cn.shiguang.notes.workflows.content.VideoUseCases;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.*;
 import org.springframework.core.io.Resource;
@@ -18,11 +19,14 @@ public class CommunityController {
   private final CommunityUseCases write;
   private final QueryUseCases query;
   private final MediaUseCases media;
+  private final VideoUseCases video;
 
-  public CommunityController(CommunityUseCases write, QueryUseCases query, MediaUseCases media) {
+  public CommunityController(
+      CommunityUseCases write, QueryUseCases query, MediaUseCases media, VideoUseCases video) {
     this.write = write;
     this.query = query;
     this.media = media;
+    this.video = video;
   }
 
   private Actor actor(HttpServletRequest r) {
@@ -51,12 +55,36 @@ public class CommunityController {
   @GetMapping("/media/{id}/content")
   public ResponseEntity<Resource> image(@PathVariable long id, HttpServletRequest r)
       throws Exception {
-    var data = media.read(actor(r), id);
-    return ResponseEntity.ok()
-        .contentType(MediaType.parseMediaType(Data.text(data, "mime")))
-        .cacheControl(CacheControl.noStore())
-        .header("X-Content-Type-Options", "nosniff")
-        .body((Resource) data.get("resource"));
+    return media.stream(
+        actor(r),
+        id,
+        false,
+        r.getHeader("Range"),
+        r.getHeader("If-Range"),
+        r.getMethod().equals("HEAD"));
+  }
+
+  @GetMapping("/media/{id}/poster")
+  public ResponseEntity<Resource> poster(@PathVariable long id, HttpServletRequest r)
+      throws Exception {
+    return media.stream(
+        actor(r),
+        id,
+        true,
+        r.getHeader("Range"),
+        r.getHeader("If-Range"),
+        r.getMethod().equals("HEAD"));
+  }
+
+  @GetMapping("/media/capabilities")
+  public ApiResponse<?> capabilities() {
+    return ok(video.capabilities());
+  }
+
+  @PostMapping("/media/videos")
+  public ApiResponse<?> video(@RequestParam MultipartFile file, HttpServletRequest r)
+      throws Exception {
+    return ok(video.upload(actor(r), file));
   }
 
   @PostMapping("/notes")

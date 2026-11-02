@@ -100,8 +100,13 @@ public class RequestSecurityFilter extends OncePerRequestFilter {
       req.setAttribute(ACTOR, actor);
       if (actor.id() > 0 && !read)
         limits.check(
-            "user:" + actor.id() + ":" + (path.equals("/api/v1/media") ? "upload" : "write"),
-            path.equals("/api/v1/media") ? 10 : 30);
+            "user:"
+                + actor.id()
+                + ":"
+                + ((path.equals("/api/v1/media") || path.equals("/api/v1/media/videos"))
+                    ? "upload"
+                    : "write"),
+            (path.equals("/api/v1/media") || path.equals("/api/v1/media/videos")) ? 10 : 30);
       String visitor = cookie(req, "SG_VISITOR");
       if (visitor == null || !visitor.matches("[a-zA-Z0-9_-]{20,100}")) {
         visitor = Tokens.random();
@@ -122,12 +127,12 @@ public class RequestSecurityFilter extends OncePerRequestFilter {
               || path.equals("/api/v1/auth/login")
               || path.equals("/api/v1/auth/register");
       boolean publicRead =
-          "GET".equals(req.getMethod())
+          Set.of("GET", "HEAD").contains(req.getMethod())
               && (path.matches("/api/v1/(feed|search|topics)")
                   || path.matches("/api/v1/notes/[0-9]+(/comments|/feedback)?")
-                  || path.matches("/api/v1/users/[0-9]+(/following|/followers)?")
+                  || path.matches("/api/v1/users/[0-9]+(/following|/followers|/summary)?")
                   || path.matches("/api/v1/comments/[0-9]+/replies")
-                  || path.matches("/api/v1/media/[0-9]+/content"));
+                  || path.matches("/api/v1/media/[0-9]+/(content|poster)"));
       if (!authPath && !publicRead) actor.requireLogin();
       if (!Set.of("GET", "HEAD", "OPTIONS").contains(req.getMethod())) {
         String csrf = req.getHeader("X-CSRF-TOKEN");

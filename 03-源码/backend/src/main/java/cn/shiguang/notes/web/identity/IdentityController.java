@@ -15,16 +15,19 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1")
 public class IdentityController {
   private final IdentityUseCases use;
+  private final cn.shiguang.notes.platform.readmodel.PublicReadModel reads;
   private final RequestSecurityFilter filter;
   private final boolean secure;
   private final cn.shiguang.notes.platform.security.RateGuard limits;
 
   public IdentityController(
       IdentityUseCases use,
+      cn.shiguang.notes.platform.readmodel.PublicReadModel reads,
       RequestSecurityFilter filter,
       cn.shiguang.notes.platform.security.RateGuard limits,
       @Value("${app.secure-cookie}") boolean secure) {
     this.use = use;
+    this.reads = reads;
     this.filter = filter;
     this.secure = secure;
     this.limits = limits;
@@ -84,6 +87,12 @@ public class IdentityController {
   @GetMapping("/users/{id}")
   public ApiResponse<?> user(@PathVariable long id) {
     return ApiResponse.ok(use.publicProfile(id));
+  }
+
+  @GetMapping("/users/{id}/summary")
+  public ApiResponse<?> summary(@PathVariable long id, HttpServletRequest req) {
+    use.publicProfile(id);
+    return ApiResponse.ok(reads.profileSummary(id, RequestSecurityFilter.actor(req).id()));
   }
 
   @PutMapping("/me/profile")

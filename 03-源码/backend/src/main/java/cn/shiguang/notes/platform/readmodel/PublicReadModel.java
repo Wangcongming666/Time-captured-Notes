@@ -14,6 +14,30 @@ public class PublicReadModel {
     this.db = db;
   }
 
+  public Map<String, Object> profileSummary(long user, long viewer) {
+    var row =
+        db.one(
+            "SELECT (SELECT COUNT(*) FROM t_follow WHERE follower_id=?) AS following_count,(SELECT"
+                + " COUNT(*) FROM t_follow WHERE followee_id=?) AS follower_count,(SELECT COUNT(*)"
+                + " FROM t_note WHERE author_id=? AND status='PUBLISHED') AS note_count,(SELECT"
+                + " COALESCE(SUM(m.like_count+m.favorite_count),0) FROM t_note n JOIN t_note_metric"
+                + " m ON m.note_id=n.id WHERE n.author_id=? AND n.status='PUBLISHED') AS"
+                + " appreciation_count,EXISTS(SELECT 1 FROM t_follow WHERE follower_id=? AND"
+                + " followee_id=?) AS following",
+            user,
+            user,
+            user,
+            user,
+            viewer,
+            user);
+    Object following = row.get("following");
+    row.put(
+        "following",
+        Boolean.TRUE.equals(following)
+            || following instanceof Number number && number.intValue() != 0);
+    return row;
+  }
+
   public boolean noteVisible(long id) {
     return db.count("SELECT COUNT(*) FROM t_note WHERE id=? AND status='PUBLISHED'", id) == 1;
   }

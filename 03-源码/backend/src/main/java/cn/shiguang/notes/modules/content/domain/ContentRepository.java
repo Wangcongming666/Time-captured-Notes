@@ -10,6 +10,8 @@ public interface ContentRepository {
 
   List<Long> mediaIds(long id);
 
+  List<Map<String, Object>> mediaEntries(long id);
+
   List<Long> topicIds(long id);
 
   List<Map<String, Object>> owned(long author, long before, int size);

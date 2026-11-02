@@ -37,6 +37,8 @@ public interface ContentApi {
       int height,
       String sha);
 
+  Map<String, Object> addVideo(Actor actor, Map<String, Object> metadata);
+
   Map<String, Object> media(long id);
 
   void bind(Actor actor, List<Long> media, String purpose, String ownerType, long ownerId);

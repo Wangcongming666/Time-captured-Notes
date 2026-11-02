@@ -19,10 +19,17 @@ public class LocalMediaStore implements MediaStore {
   }
 
   public void put(String key, byte[] bytes, String contentType) throws IOException {
+    try (var input = new ByteArrayInputStream(bytes)) {
+      put(key, input, bytes.length, contentType);
+    }
+  }
+
+  public void put(String key, InputStream input, long size, String contentType) throws IOException {
     Path target = path(key), temp = null;
     try {
       temp = Files.createTempFile(root, "upload-", ".tmp");
-      Files.write(temp, bytes);
+      Files.copy(input, temp, StandardCopyOption.REPLACE_EXISTING);
+      if (Files.size(temp) != size) throw new IOException("Media length mismatch");
       Files.move(temp, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
     } catch (IOException e) {
       throw new MediaStoreException("write", e);

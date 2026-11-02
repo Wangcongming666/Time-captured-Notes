@@ -42,6 +42,7 @@ public class ContentService implements ContentApi {
     if (owner && Data.id(n, "authorId") != actor.id()) throw BizException.missing();
     var out = Data.select(n, "id", "authorId", "title", "body", "publishedAt");
     out.put("mediaIds", repo.mediaIds(id).stream().map(Object::toString).toList());
+    out.put("mediaEntries", repo.mediaEntries(id));
     out.put("topicIds", repo.topicIds(id).stream().map(Object::toString).toList());
     if (owner) {
       out.put("status", n.get("status"));
@@ -63,6 +64,7 @@ public class ContentService implements ContentApi {
             n, "id", "authorId", "title", "body", "status", "version", "revision", "publishedAt");
     out.put("reason", n.get("rejectReason"));
     out.put("mediaIds", repo.mediaIds(id).stream().map(Object::toString).toList());
+    out.put("mediaEntries", repo.mediaEntries(id));
     out.put("topicIds", repo.topicIds(id).stream().map(Object::toString).toList());
     return out;
   }
@@ -161,6 +163,26 @@ public class ContentService implements ContentApi {
                 sha));
     return Data.map(
         "id", Long.toString(id), "mime", mime, "sizeBytes", size, "width", width, "height", height);
+  }
+
+  public Map<String, Object> addVideo(Actor actor, Map<String, Object> metadata) {
+    actor.requireLogin();
+    var values = new LinkedHashMap<>(metadata);
+    values.put("owner_id", actor.id());
+    long id = repo.addMedia(values);
+    return Data.map(
+        "id",
+        Long.toString(id),
+        "mediaType",
+        "VIDEO",
+        "mime",
+        "video/mp4",
+        "width",
+        values.get("width"),
+        "height",
+        values.get("height"),
+        "durationMs",
+        values.get("duration_ms"));
   }
 
   public Map<String, Object> media(long id) {

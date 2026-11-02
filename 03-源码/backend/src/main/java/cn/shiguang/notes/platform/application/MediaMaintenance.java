@@ -30,8 +30,8 @@ public class MediaMaintenance {
             s -> {
               var rows =
                   db.query(
-                      "SELECT m.id,m.storage_key FROM t_media m WHERE m.status IN"
-                          + " ('STAGED','DELETED') AND"
+                      "SELECT m.id,m.storage_key,m.poster_storage_key FROM t_media m WHERE m.status"
+                          + " IN ('STAGED','DELETED') AND"
                           + " m.created_at<DATE_SUB(UTC_TIMESTAMP(),INTERVAL 24 HOUR) AND NOT"
                           + " EXISTS(SELECT 1 FROM t_note_media n WHERE n.media_id=m.id) AND NOT"
                           + " EXISTS(SELECT 1 FROM t_practice_media p WHERE p.media_id=m.id) AND"
@@ -45,6 +45,8 @@ public class MediaMaintenance {
     for (var row : candidates)
       try {
         store.delete(Data.text(row, "storageKey"));
+        if (!Data.text(row, "posterStorageKey").isEmpty())
+          store.delete(Data.text(row, "posterStorageKey"));
         tx.execute(
             s ->
                 db.update(
